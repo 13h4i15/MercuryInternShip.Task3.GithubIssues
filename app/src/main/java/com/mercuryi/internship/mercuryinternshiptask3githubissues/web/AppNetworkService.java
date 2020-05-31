@@ -7,7 +7,6 @@ public final class AppNetworkService {
     private final static String BASE_URL = "https://api.github.com";
 
     private static AppNetworkService instance;
-
     private final GithubApi githubApi;
 
     private AppNetworkService() {

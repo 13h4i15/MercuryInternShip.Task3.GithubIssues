@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">MercuryInternShipTask3.GithubIssues</string>
+    <string name="app_name">GithubIssues</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="empty_issue_list_fragment">No opened Issues</string>
+    <string name="loading_error_toast">Can\'t load issues</string>
 </resources>
