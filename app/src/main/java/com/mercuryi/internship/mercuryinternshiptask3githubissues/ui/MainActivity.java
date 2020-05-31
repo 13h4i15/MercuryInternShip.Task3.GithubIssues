@@ -52,9 +52,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadIssueListPages(int page) {
+        if (call != null && !call.isExecuted())return;
         swipeRefreshLayout.setRefreshing(true);
-
-        if (call != null && !call.isExecuted()) return;
         call = AppNetworkService.getGithubApi().getProjectIssues(
                 "alibaba", "atlas", "open", page);
         call.enqueue(new Callback<List<Issue>>() {
