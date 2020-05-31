@@ -46,13 +46,15 @@ public class MainActivity extends AppCompatActivity {
     private void loadIssueList() {
         if (issueListFragment == null) {
             createListFragment();
+        } else {
+            issueListFragment.clearIssueList();
         }
         currentPage = 0;
-        loadIssueListPages(currentPage);
+        loadIssueListPages(currentPage++);
     }
 
     private void loadIssueListPages(int page) {
-        if (call != null && !call.isExecuted())return;
+        if (call != null && !call.isExecuted()) return;
         swipeRefreshLayout.setRefreshing(true);
         call = AppNetworkService.getGithubApi().getProjectIssues(
                 "alibaba", "atlas", "open", page);
@@ -68,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 if (issueListFragment != null) {
-                    ++currentPage;
                     issueListFragment.addIssueList(result);
                 }
             }
@@ -78,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
                 swipeRefreshLayout.setRefreshing(false);
                 createEmptyListFragment();
                 Toast.makeText(MainActivity.this, R.string.loading_error_toast, Toast.LENGTH_SHORT).show();
-                t.getMessage();
             }
         });
     }
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (!recyclerView.canScrollVertically(1)) {
-                    loadIssueListPages(currentPage);
+                    loadIssueListPages(currentPage++);
                 }
             }
         });
