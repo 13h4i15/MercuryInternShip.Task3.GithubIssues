@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="issue_item_recycler_distance">20dp</dimen>
+</resources>

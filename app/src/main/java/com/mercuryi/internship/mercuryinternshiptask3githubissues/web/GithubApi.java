@@ -10,6 +10,8 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface GithubApi {
+    String STATE_OPEN = "open";
+
     @GET("/repos/{user}/{project}/issues")
     Call<List<Issue>> getProjectIssues(@Path("user") String userName, @Path("project") String projectName,
                                        @Query("state") String state, @Query("page") int page);

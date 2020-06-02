@@ -18,10 +18,6 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     private final List<Issue> issueList = new ArrayList<>();
     private IssueListFragment.OnIssueItemClickListener onIssueItemClickListener;
 
-    public IssueRecyclerViewAdapter(IssueListFragment.OnIssueItemClickListener onIssueItemClickListener) {
-        this.onIssueItemClickListener = onIssueItemClickListener;
-    }
-
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
@@ -43,13 +39,13 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         return issueList.size();
     }
 
-    public void addIssueList(@NonNull List<Issue> issueList) {
-        this.issueList.addAll(issueList);
-        notifyDataSetChanged();
+    public void setOnIssueItemClickListener(@NonNull IssueListFragment.OnIssueItemClickListener onIssueItemClickListener) {
+        this.onIssueItemClickListener = onIssueItemClickListener;
     }
 
-    public void clearIssueList() {
-        issueList.clear();
+    public void setIssueList(@NonNull List<Issue> issueList) {
+        this.issueList.clear();
+        this.issueList.addAll(issueList);
         notifyDataSetChanged();
     }
 

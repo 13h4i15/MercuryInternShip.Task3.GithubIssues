@@ -14,25 +14,25 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 public class IssueFragment extends Fragment {
-    private Issue issue;
+    private Issue selectedIssue;
 
     public IssueFragment() {
     }
 
-    public IssueFragment(@NonNull Issue issue) {
-        this.issue = issue;
+    public IssueFragment(Issue selectedIssue) {
+        this.selectedIssue = selectedIssue;
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_issue, container, false);
-
         TextView title = root.findViewById(R.id.issue_fragment_title);
         TextView body = root.findViewById(R.id.issue_fragment_body);
-        if (issue != null) {
-            title.setText(issue.getTitle());
-            body.setText(issue.getBody());
+
+        if (selectedIssue != null) {
+            title.setText(selectedIssue.getTitle());
+            body.setText(selectedIssue.getBody());
         }
 
         return root;
