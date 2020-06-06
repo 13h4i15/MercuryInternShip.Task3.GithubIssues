@@ -20,9 +20,8 @@
             app:popupTheme="@style/AppTheme.PopupOverlay" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <FrameLayout
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/issue_fragment"
-        android:name="com.mercuryinternship.githubissues.ui.IssueFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </LinearLayout>

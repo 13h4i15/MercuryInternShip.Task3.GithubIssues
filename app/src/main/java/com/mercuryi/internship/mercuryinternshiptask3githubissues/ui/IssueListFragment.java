@@ -1,10 +1,13 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
@@ -24,16 +27,36 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import java.util.List;
 
 public class IssueListFragment extends Fragment {
+    private OnIssueItemClickListener onIssueItemClickListener;
+
+    public static IssueListFragment newInstance() {
+        return new IssueListFragment();
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if (context instanceof IssueListFragmentContainer) {
+            onIssueItemClickListener = ((IssueListFragmentContainer) context).requestIssueItemClickListener();
+        }
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_issue_list, container, false);
+        return inflater.inflate(R.layout.fragment_issue_list, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(root, savedInstanceState);
 
         RecyclerView recyclerView = root.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         IssueRecyclerViewAdapter issueRecyclerViewAdapter = new IssueRecyclerViewAdapter();
-        issueRecyclerViewAdapter.setOnIssueItemClickListener(getOnIssueItemClickListener());
+        if (onIssueItemClickListener != null) {
+            issueRecyclerViewAdapter.setOnIssueItemClickListener(onIssueItemClickListener);
+        }
         recyclerView.addItemDecoration(new VerticalSpaceItemDecoration());
         recyclerView.setAdapter(issueRecyclerViewAdapter);
 
@@ -67,25 +90,10 @@ public class IssueListFragment extends Fragment {
                 }
             }
         });
-
-        return root;
     }
 
-    @NonNull
-    private OnIssueItemClickListener getOnIssueItemClickListener() {
-        return issue -> {
-            FrameLayout frameLayout = getActivity().findViewById(R.id.issue_fragment);
-            if (frameLayout == null) {
-                Intent intent = new Intent(getActivity(), IssueActivity.class);
-                intent.putExtra(IssueActivity.ISSUE_EXTRA, issue);
-                startActivity(intent);
-            } else {
-                FragmentTransaction fragmentTransaction = getParentFragmentManager().beginTransaction();
-                fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-                fragmentTransaction.replace(R.id.issue_fragment, IssueFragment.newInstance(issue));
-                fragmentTransaction.commit();
-            }
-        };
+    public interface IssueListFragmentContainer {
+        OnIssueItemClickListener requestIssueItemClickListener();
     }
 
     public interface OnIssueItemClickListener {

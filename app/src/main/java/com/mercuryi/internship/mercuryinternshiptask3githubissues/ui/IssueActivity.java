@@ -22,8 +22,10 @@ public class IssueActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
 
         Issue issue = getIntent().getParcelableExtra(ISSUE_EXTRA);
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.issue_fragment, new IssueFragment(issue));
-        fragmentTransaction.commit();
+        if (issue != null) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.issue_fragment, IssueFragment.newInstance(issue));
+            fragmentTransaction.commit();
+        }
     }
 }

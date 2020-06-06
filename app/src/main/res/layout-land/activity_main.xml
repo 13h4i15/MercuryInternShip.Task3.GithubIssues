@@ -4,16 +4,14 @@
     android:layout_height="match_parent"
     android:baselineAligned="false">
 
-    <FrameLayout
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/list_fragment"
-        android:name="com.mercuryinternship.githubissues.ui.IssueListFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1" />
 
-    <FrameLayout
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/issue_fragment"
-        android:name="com.mercuryinternship.githubissues.ui.IssueFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1" />

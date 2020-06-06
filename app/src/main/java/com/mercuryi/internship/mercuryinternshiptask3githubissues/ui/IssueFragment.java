@@ -3,6 +3,7 @@ package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
@@ -27,7 +28,13 @@ public class IssueFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_issue, container, false);
+        return inflater.inflate(R.layout.fragment_issue, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(root, savedInstanceState);
+
         TextView title = root.findViewById(R.id.issue_fragment_title);
         TextView body = root.findViewById(R.id.issue_fragment_body);
 
@@ -37,6 +44,5 @@ public class IssueFragment extends Fragment {
             body.setText(selectedIssue.getBody());
         }
 
-        return root;
     }
 }
