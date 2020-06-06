@@ -82,7 +82,7 @@ public class IssueListFragment extends Fragment {
             } else {
                 FragmentTransaction fragmentTransaction = getParentFragmentManager().beginTransaction();
                 fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-                fragmentTransaction.replace(R.id.issue_fragment, new IssueFragment(issue));
+                fragmentTransaction.replace(R.id.issue_fragment, IssueFragment.newInstance(issue));
                 fragmentTransaction.commit();
             }
         };

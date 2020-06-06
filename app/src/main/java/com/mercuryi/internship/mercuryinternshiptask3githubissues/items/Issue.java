@@ -5,42 +5,47 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
-import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 public final class Issue implements Parcelable {
     @SerializedName("id")
-    @Expose
-    private String id;
+    private final String id;
 
     @SerializedName("title")
-    @Expose
-    private String title;
+    private final String title;
 
     @SerializedName("body")
-    @Expose
-    private String body;
+    private final String body;
 
     @SerializedName("user")
-    @Expose
-    private User user;
+    private final User user;
 
-    public static final Parcelable.Creator<Issue> CREATOR
-            = new Parcelable.Creator<Issue>() {
-        @NonNull
-        public Issue createFromParcel(@NonNull Parcel in) {
-            Issue issue = new Issue();
-            issue.setId(in.readString());
-            issue.setTitle(in.readString());
-            issue.setBody(in.readString());
-            return issue;
-        }
+    public Issue(@NonNull String id, @NonNull String title, @NonNull String body, @NonNull User user) {
+        this.id = id;
+        this.title = title;
+        this.body = body;
+        this.user = user;
+    }
 
-        @NonNull
-        public Issue[] newArray(int size) {
-            return new Issue[size];
-        }
-    };
+    @NonNull
+    public String getTitle() {
+        return title;
+    }
+
+    @NonNull
+    public String getId() {
+        return id;
+    }
+
+    @NonNull
+    public String getBody() {
+        return body;
+    }
+
+    @NonNull
+    public User getUser() {
+        return user;
+    }
 
     @Override
     public int describeContents() {
@@ -52,41 +57,20 @@ public final class Issue implements Parcelable {
         dest.writeString(id);
         dest.writeString(title);
         dest.writeString(body);
+        dest.writeParcelable(user, flags);
     }
 
-    @NonNull
-    public String getTitle() {
-        return title;
-    }
+    public static final Parcelable.Creator<Issue> CREATOR
+            = new Parcelable.Creator<Issue>() {
+        @NonNull
+        public Issue createFromParcel(@NonNull Parcel in) {
+            return new Issue(in.readString(), in.readString(), in.readString(),
+                    in.readParcelable(User.class.getClassLoader()));
+        }
 
-    public void setTitle(@NonNull String title) {
-        this.title = title;
-    }
-
-    @NonNull
-    public String getId() {
-        return id;
-    }
-
-    public void setId(@NonNull String id) {
-        this.id = id;
-    }
-
-    @NonNull
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
-
-    @NonNull
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
+        @NonNull
+        public Issue[] newArray(int size) {
+            return new Issue[size];
+        }
+    };
 }

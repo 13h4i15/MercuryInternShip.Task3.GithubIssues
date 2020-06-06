@@ -14,13 +14,14 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 public class IssueFragment extends Fragment {
-    private Issue selectedIssue;
+    private final static String EXTRA_PARCELABLE_ISSUE_KEY = "selectedIssue";
 
-    public IssueFragment() {
-    }
-
-    public IssueFragment(Issue selectedIssue) {
-        this.selectedIssue = selectedIssue;
+    public static IssueFragment newInstance(@NonNull Issue selectedIssue) {
+        IssueFragment issueFragment = new IssueFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(EXTRA_PARCELABLE_ISSUE_KEY, selectedIssue);
+        issueFragment.setArguments(args);
+        return issueFragment;
     }
 
     @Override
@@ -30,7 +31,8 @@ public class IssueFragment extends Fragment {
         TextView title = root.findViewById(R.id.issue_fragment_title);
         TextView body = root.findViewById(R.id.issue_fragment_body);
 
-        if (selectedIssue != null) {
+        if (getArguments() != null && getArguments().getParcelable(EXTRA_PARCELABLE_ISSUE_KEY) != null) {
+            Issue selectedIssue = getArguments().getParcelable(EXTRA_PARCELABLE_ISSUE_KEY);
             title.setText(selectedIssue.getTitle());
             body.setText(selectedIssue.getBody());
         }
