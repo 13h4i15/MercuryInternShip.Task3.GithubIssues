@@ -17,7 +17,7 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 public class IssueFragment extends Fragment {
     private final static String EXTRA_PARCELABLE_ISSUE_KEY = "selectedIssue";
 
-    public static IssueFragment newInstance(@NonNull Issue selectedIssue) {
+    public static IssueFragment newInstance(Issue selectedIssue) {
         IssueFragment issueFragment = new IssueFragment();
         Bundle args = new Bundle();
         args.putParcelable(EXTRA_PARCELABLE_ISSUE_KEY, selectedIssue);
@@ -35,14 +35,12 @@ public class IssueFragment extends Fragment {
     public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(root, savedInstanceState);
 
-        TextView title = root.findViewById(R.id.issue_fragment_title);
-        TextView body = root.findViewById(R.id.issue_fragment_body);
-
         if (getArguments() != null && getArguments().getParcelable(EXTRA_PARCELABLE_ISSUE_KEY) != null) {
+            TextView title = root.findViewById(R.id.issue_fragment_title);
+            TextView body = root.findViewById(R.id.issue_fragment_body);
             Issue selectedIssue = getArguments().getParcelable(EXTRA_PARCELABLE_ISSUE_KEY);
             title.setText(selectedIssue.getTitle());
             body.setText(selectedIssue.getBody());
         }
-
     }
 }

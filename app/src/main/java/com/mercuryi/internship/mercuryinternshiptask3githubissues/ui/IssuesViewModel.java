@@ -21,6 +21,7 @@ import retrofit2.Response;
 
 final class IssuesViewModel extends AndroidViewModel {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
+    private final static int ITEMS_ON_PAGE_COUNT = 30;
 
     private MutableLiveData<List<Issue>> issues = new MutableLiveData<>();
     private int page;
@@ -31,12 +32,12 @@ final class IssuesViewModel extends AndroidViewModel {
         if (isIssuesEmpty()) {
             reloadIssues();
         } else {
-            page = (issues.getValue().size() - 1) / 30 + 1;
+            page = (issues.getValue().size() - 1) / ITEMS_ON_PAGE_COUNT + 1;
         }
     }
 
     public void reloadIssues() {
-        page = 0;
+        page = 1;
         loadIssueList(true);
     }
 
@@ -71,9 +72,6 @@ final class IssuesViewModel extends AndroidViewModel {
 
             @Override
             public void onFailure(@NonNull Call<List<Issue>> call, @NonNull Throwable t) {
-                if (isNeedToSetBlankList) {
-                    issues.setValue(new ArrayList<>());
-                }
                 Log.e(LOADING_ERROR_LOG_TAG, t.getMessage());
             }
         });
