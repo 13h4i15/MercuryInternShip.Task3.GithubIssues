@@ -24,7 +24,7 @@ public final class IssuesViewModel extends ViewModel {
     private final static String userName = "alibaba";
     private final static String projectName = "atlas";
 
-    private ReplaySubject<List<Issue>> issuesReplaySubject = ReplaySubject.create();
+    private final ReplaySubject<List<Issue>> issuesReplaySubject = ReplaySubject.create();
     private Disposable issuesAllSingleDisposable;
     private int page;
 

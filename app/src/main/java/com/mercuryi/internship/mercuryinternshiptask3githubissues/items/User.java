@@ -16,7 +16,7 @@ public final class User implements Parcelable {
     @SerializedName("avatar_url")
     private final String avatarUrl;
 
-    public User(@NonNull String login, @NonNull String avatarUrl) {
+    private User(@NonNull String login, @NonNull String avatarUrl) {
         this.login = login;
         this.avatarUrl = avatarUrl;
     }

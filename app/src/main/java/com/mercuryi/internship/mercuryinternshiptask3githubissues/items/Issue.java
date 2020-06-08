@@ -22,7 +22,7 @@ public final class Issue implements Parcelable {
     @SerializedName("user")
     private final User user;
 
-    public Issue(@NonNull String id, @NonNull String title, @NonNull String body, @NonNull User user) {
+    private Issue(@NonNull String id, @NonNull String title, @NonNull String body, @NonNull User user) {
         this.id = id;
         this.title = title;
         this.body = body;
