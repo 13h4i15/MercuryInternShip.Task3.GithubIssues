@@ -11,7 +11,6 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +18,6 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-
 
 public final class IssuesViewModel extends ViewModel {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";

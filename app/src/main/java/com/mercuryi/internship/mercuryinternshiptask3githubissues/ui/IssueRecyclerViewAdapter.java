@@ -33,7 +33,6 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         view.setOnClickListener(v ->
         {
             if (!v.isSelected()) {
-                //v.setSelected(true);
                 selectedIssue = issueList.get(holder.getLayoutPosition());
                 notifyDataSetChanged();
                 onIssueItemClickListener.onClick(issueList.get(holder.getLayoutPosition()));
