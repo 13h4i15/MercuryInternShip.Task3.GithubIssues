@@ -1,38 +1,41 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
-import android.app.Application;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
-final class IssuesViewModel extends AndroidViewModel {
+
+public final class IssuesViewModel extends ViewModel {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
-    private final static int ITEMS_ON_PAGE_COUNT = 30;
+
+    private final static String userName = "alibaba";
+    private final static String projectName = "atlas";
 
     private MutableLiveData<List<Issue>> issues = new MutableLiveData<>();
     private int page;
-    private Call call;
+    private Disposable issuesAllSingleDisposable;
 
-    public IssuesViewModel(Application application) {
-        super(application);
+    public IssuesViewModel() {
         if (isIssuesEmpty()) {
             reloadIssues();
         } else {
-            page = (issues.getValue().size() - 1) / ITEMS_ON_PAGE_COUNT + 1;
+            page = (issues.getValue().size() - 1) / GithubApi.ITEMS_ON_PAGE_COUNT + 1;
         }
     }
 
@@ -50,34 +53,31 @@ final class IssuesViewModel extends AndroidViewModel {
         return issues;
     }
 
-    private void loadIssueList(boolean isReloading) {
-        if (call != null && !call.isExecuted()) return;
-        boolean isNeedToSetBlankList = isIssuesEmpty() || isReloading;
+    private void loadIssueList(boolean isReload) {
+        if (issuesAllSingleDisposable != null && !issuesAllSingleDisposable.isDisposed()) return;
 
-        call = AppNetworkService.getGithubApi().getProjectIssues(
-                "alibaba", "atlas", GithubApi.STATE_OPEN, page);
-        call.enqueue(new Callback<List<Issue>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<Issue>> call, @NonNull Response<List<Issue>> response) {
-                List<Issue> result = response.body();
-                if (result != null && result.size() != 0) {
-                    List<Issue> resList = isNeedToSetBlankList ? new ArrayList<>() : issues.getValue();
-                    resList.addAll(result);
-                    issues.setValue(resList);
-                    ++page;
-                } else if (isNeedToSetBlankList) {
-                    issues.setValue(new ArrayList<>());
-                }
+        Single<List<Issue>> issuesPageObservable = AppNetworkService.getGithubApi().getProjectIssues(
+                userName, projectName, GithubApi.STATE_OPEN, page)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+        issuesAllSingleDisposable = issuesPageObservable.subscribe(issueList -> {
+            if (issueList != null && issueList.size() != 0) {
+                List<Issue> resList = isIssuesEmpty() || isReload ? new ArrayList<>() : issues.getValue();
+                resList.addAll(issueList);
+                issues.setValue(resList);
+                ++page;
+            } else if (isIssuesEmpty()) {
+                issues.setValue(new ArrayList<>());
             }
-
-            @Override
-            public void onFailure(@NonNull Call<List<Issue>> call, @NonNull Throwable t) {
-                Log.e(LOADING_ERROR_LOG_TAG, t.getMessage());
+        }, error -> {
+            if (isIssuesEmpty()) {
+                issues.setValue(new ArrayList<>());
             }
+            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
         });
     }
 
     private boolean isIssuesEmpty() {
-        return issues.getValue() == null || issues.getValue().size() == 0;
+        return issues.getValue() == null || issues.getValue().isEmpty();
     }
 }

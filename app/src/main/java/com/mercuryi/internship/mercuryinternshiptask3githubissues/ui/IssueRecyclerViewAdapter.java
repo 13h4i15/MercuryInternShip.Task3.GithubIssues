@@ -19,18 +19,32 @@ import java.util.List;
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
     private final List<Issue> issueList = new ArrayList<>();
     private IssueListFragment.OnIssueItemClickListener onIssueItemClickListener;
+    private Issue selectedIssue;
+
+    public IssueRecyclerViewAdapter(Issue issue) {
+        this.selectedIssue = issue;
+    }
 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_issue, parent, false);
         ViewHolder holder = new ViewHolder(view);
-        view.setOnClickListener(v -> onIssueItemClickListener.onClick(issueList.get(holder.getLayoutPosition())));
+        view.setOnClickListener(v ->
+        {
+            if (!v.isSelected()) {
+                //v.setSelected(true);
+                selectedIssue = issueList.get(holder.getLayoutPosition());
+                notifyDataSetChanged();
+                onIssueItemClickListener.onClick(issueList.get(holder.getLayoutPosition()));
+            }
+        });
         return holder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        holder.itemView.setSelected(issueList.indexOf(selectedIssue) == position);
         Issue issue = issueList.get(position);
         holder.issueTitle.setText(issue.getTitle());
         holder.issueId.setText(issue.getId());
@@ -56,10 +70,19 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         this.onIssueItemClickListener = onIssueItemClickListener;
     }
 
+    public void setSelectedIssuex(Issue issue) {
+        this.selectedIssue = issue;
+        notifyDataSetChanged();
+    }
+
     public void setIssueList(@NonNull List<Issue> issueList) {
         this.issueList.clear();
         this.issueList.addAll(issueList);
         notifyDataSetChanged();
+    }
+
+    public List<Issue> getIssueList() {
+        return issueList;
     }
 
     public final static class ViewHolder extends RecyclerView.ViewHolder {

@@ -13,11 +13,9 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 public class MainActivity extends AppCompatActivity implements IssueListFragment.IssueListFragmentContainer {
-    private final static String ISSUE_EXTRA = "issue";
     private final static int ISSUE_ACTIVITY_REQUEST_CODE = 0;
 
-
-    private Issue selectedIssue;
+    private IssueListFragment issueListFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,12 +25,10 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
         if (savedInstanceState == null) {
             createListFragment();
         } else {
-            selectedIssue = savedInstanceState.getParcelable(ISSUE_EXTRA);
+            issueListFragment = (IssueListFragment) getSupportFragmentManager().getFragments().get(0);
         }
 
-        if (selectedIssue != null) {
-            requestIssueItemClickListener().onClick(selectedIssue);
-        } else if (isIssueFragmentExist()) {
+        if (isIssueFragmentContainerExist()) {
             createIssueFragment(null);
         }
     }
@@ -40,28 +36,26 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ISSUE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
-            selectedIssue = null;
+        if (requestCode == ISSUE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK && issueListFragment != null) {
+            issueListFragment.setSelectedIssue(null);
         }
-    }
-
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable(ISSUE_EXTRA, selectedIssue);
     }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance());
+        issueListFragment = IssueListFragment.newInstance();
+        fragmentTransaction.replace(R.id.list_fragment, issueListFragment);
         fragmentTransaction.commit();
     }
 
     @NonNull
     public IssueListFragment.OnIssueItemClickListener requestIssueItemClickListener() {
         return issue -> {
-            selectedIssue = issue;
-            if (!isIssueFragmentExist()) {
+            if (issueListFragment == null) {
+                return;
+            }
+            issueListFragment.setSelectedIssue(issue);
+            if (!isIssueFragmentContainerExist()) {
                 Intent intent = new Intent(this, IssueActivity.class);
                 intent.putExtra(IssueActivity.ISSUE_EXTRA, issue);
                 startActivityForResult(intent, ISSUE_ACTIVITY_REQUEST_CODE);
@@ -78,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
         fragmentTransaction.commit();
     }
 
-    private boolean isIssueFragmentExist() {
+    private boolean isIssueFragmentContainerExist() {
         FragmentContainerView fragmentContainerView = findViewById(R.id.issue_fragment);
         return fragmentContainerView != null;
     }

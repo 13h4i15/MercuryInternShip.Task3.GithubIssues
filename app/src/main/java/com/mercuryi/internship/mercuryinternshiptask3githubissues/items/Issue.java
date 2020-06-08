@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Objects;
+
 public final class Issue implements Parcelable {
     @SerializedName("id")
     private final String id;
@@ -73,4 +75,20 @@ public final class Issue implements Parcelable {
             return new Issue[size];
         }
     };
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Issue issue = (Issue) o;
+        return id.equals(issue.id) &&
+                title.equals(issue.title) &&
+                body.equals(issue.body) &&
+                user.equals(issue.user);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, body, user);
+    }
 }
