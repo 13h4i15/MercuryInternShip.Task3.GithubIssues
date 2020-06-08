@@ -3,21 +3,19 @@ package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 
 public final class IssuesViewModel extends ViewModel {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
@@ -25,57 +23,42 @@ public final class IssuesViewModel extends ViewModel {
     private final static String userName = "alibaba";
     private final static String projectName = "atlas";
 
-    private MutableLiveData<List<Issue>> issues = new MutableLiveData<>();
-    private int page;
+    private ReplaySubject<List<Issue>> issuesReplaySubject = ReplaySubject.create();
     private Disposable issuesAllSingleDisposable;
+    private int page;
 
     public IssuesViewModel() {
-        if (isIssuesEmpty()) {
-            reloadIssues();
-        } else {
-            page = (issues.getValue().size() - 1) / GithubApi.ITEMS_ON_PAGE_COUNT + 1;
-        }
+        reloadIssues();
     }
 
     public void reloadIssues() {
         page = 1;
-        loadIssueList(true);
+        issuesReplaySubject.cleanupBuffer();
+        loadIssueList();
     }
 
     public void loadNewIssues() {
-        loadIssueList(false);
+        loadIssueList();
     }
 
     @NonNull
-    public LiveData<List<Issue>> getIssues() {
-        return issues;
+    public ReplaySubject<List<Issue>> getIssuesReplaySubject() {
+        return issuesReplaySubject;
     }
 
-    private void loadIssueList(boolean isReload) {
+    private void loadIssueList() {
         if (issuesAllSingleDisposable != null && !issuesAllSingleDisposable.isDisposed()) return;
 
-        Single<List<Issue>> issuesPageObservable = AppNetworkService.getGithubApi().getProjectIssues(
+        Single<List<Issue>> issuesPageSingle = AppNetworkService.getGithubApi().getProjectIssues(
                 userName, projectName, GithubApi.STATE_OPEN, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
-        issuesAllSingleDisposable = issuesPageObservable.subscribe(issueList -> {
-            if (issueList != null && issueList.size() != 0) {
-                List<Issue> resList = isIssuesEmpty() || isReload ? new ArrayList<>() : issues.getValue();
-                resList.addAll(issueList);
-                issues.setValue(resList);
-                ++page;
-            } else if (isIssuesEmpty()) {
-                issues.setValue(new ArrayList<>());
-            }
-        }, error -> {
-            if (isIssuesEmpty()) {
-                issues.setValue(new ArrayList<>());
-            }
-            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
-        });
-    }
 
-    private boolean isIssuesEmpty() {
-        return issues.getValue() == null || issues.getValue().isEmpty();
+        issuesAllSingleDisposable = issuesPageSingle.subscribe(issueList -> {
+            if (issueList != null && issueList.size() != 0) {
+                issuesReplaySubject.onNext(issueList);
+                ++page;
+            }
+        }, error -> Log.e(LOADING_ERROR_LOG_TAG, error.toString()));
     }
 }

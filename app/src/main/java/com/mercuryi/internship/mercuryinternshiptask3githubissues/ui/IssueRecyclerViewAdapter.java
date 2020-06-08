@@ -74,14 +74,14 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         notifyDataSetChanged();
     }
 
-    public void setIssueList(@NonNull List<Issue> issueList) {
-        this.issueList.clear();
+    public void addToIssueList(@NonNull List<Issue> issueList) {
         this.issueList.addAll(issueList);
         notifyDataSetChanged();
     }
 
-    public List<Issue> getIssueList() {
-        return issueList;
+    public void clearIssueList() {
+        this.issueList.clear();
+        notifyDataSetChanged();
     }
 
     public final static class ViewHolder extends RecyclerView.ViewHolder {

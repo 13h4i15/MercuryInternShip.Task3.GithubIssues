@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +20,8 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 import java.util.List;
+
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 
 public class IssueListFragment extends Fragment {
     private final static String ISSUE_EXTRA = "issue";
@@ -67,21 +68,19 @@ public class IssueListFragment extends Fragment {
         IssuesViewModel issuesViewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
-        SwipeRefreshLayout.OnRefreshListener refreshListener = issuesViewModel::reloadIssues;
+        SwipeRefreshLayout.OnRefreshListener refreshListener = () -> {
+            issueRecyclerViewAdapter.clearIssueList();
+            issuesViewModel.reloadIssues();
+        };
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
 
-        LiveData<List<Issue>> issueLiveData = issuesViewModel.getIssues();
+        ReplaySubject<List<Issue>> issueLiveData = issuesViewModel.getIssuesReplaySubject();
         TextView textView = root.findViewById(R.id.empty_list_message);
-        issueLiveData.observe(getViewLifecycleOwner(), issues -> {
+        issueLiveData.subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
-            if (issues.size() == 0) {
-                recyclerView.setVisibility(View.GONE);
-                textView.setVisibility(View.VISIBLE);
-            } else {
-                recyclerView.setVisibility(View.VISIBLE);
-                textView.setVisibility(View.GONE);
-                issueRecyclerViewAdapter.setIssueList(issues);
-            }
+            recyclerView.setVisibility(View.VISIBLE);
+            textView.setVisibility(View.GONE);
+            issueRecyclerViewAdapter.addToIssueList(issues);
         });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
