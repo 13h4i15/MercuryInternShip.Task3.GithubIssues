@@ -69,7 +69,7 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         this.onIssueItemClickListener = onIssueItemClickListener;
     }
 
-    public void setSelectedIssuex(Issue issue) {
+    public void setSelectedIssue(Issue issue) {
         this.selectedIssue = issue;
         notifyDataSetChanged();
     }

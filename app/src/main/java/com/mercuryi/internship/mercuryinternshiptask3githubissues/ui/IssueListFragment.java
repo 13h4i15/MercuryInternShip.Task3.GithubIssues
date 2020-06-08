@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import java.util.List;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 
 public class IssueListFragment extends Fragment {
+    private final static String LOADING_ERROR_LOG_TAG = "loading_error";
     private final static String ISSUE_EXTRA = "issue";
 
     private OnIssueItemClickListener onIssueItemClickListener;
@@ -74,13 +76,21 @@ public class IssueListFragment extends Fragment {
         };
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
 
-        ReplaySubject<List<Issue>> issueLiveData = issuesViewModel.getIssuesReplaySubject();
+        ReplaySubject<List<Issue>> issuesReplaySubject = issuesViewModel.getIssuesReplaySubject();
         TextView textView = root.findViewById(R.id.empty_list_message);
-        issueLiveData.subscribe(issues -> {
+        issuesReplaySubject.subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
-            recyclerView.setVisibility(View.VISIBLE);
-            textView.setVisibility(View.GONE);
-            issueRecyclerViewAdapter.addToIssueList(issues);
+            if (issues.size() > 0 || issueRecyclerViewAdapter.getItemCount() > 0) {
+                recyclerView.setVisibility(View.VISIBLE);
+                textView.setVisibility(View.GONE);
+                issueRecyclerViewAdapter.addToIssueList(issues);
+            } else if (issueRecyclerViewAdapter.getItemCount() == 0) {
+                recyclerView.setVisibility(View.GONE);
+                textView.setVisibility(View.VISIBLE);
+            }
+        }, error -> {
+            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+            swipeRefreshLayout.setRefreshing(false);
         });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -107,7 +117,7 @@ public class IssueListFragment extends Fragment {
     public void setSelectedIssue(@Nullable Issue selectedIssue) {
         this.selectedIssue = selectedIssue;
         if (issueRecyclerViewAdapter != null) {
-            issueRecyclerViewAdapter.setSelectedIssuex(selectedIssue);
+            issueRecyclerViewAdapter.setSelectedIssue(selectedIssue);
         }
     }
 

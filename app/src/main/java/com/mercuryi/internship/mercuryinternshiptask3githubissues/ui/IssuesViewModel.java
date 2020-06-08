@@ -9,6 +9,7 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -58,7 +59,12 @@ public final class IssuesViewModel extends ViewModel {
             if (issueList != null && issueList.size() != 0) {
                 issuesReplaySubject.onNext(issueList);
                 ++page;
+            } else {
+                issuesReplaySubject.onNext(new ArrayList<>());
             }
-        }, error -> Log.e(LOADING_ERROR_LOG_TAG, error.toString()));
+        }, error -> {
+            issuesReplaySubject.onNext(new ArrayList<>());
+            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+        });
     }
 }

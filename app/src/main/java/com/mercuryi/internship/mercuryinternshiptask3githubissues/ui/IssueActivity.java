@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
 
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
@@ -20,10 +19,10 @@ public class IssueActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        toolbar.setNavigationOnClickListener(v -> {
-            onBackPressed();
-        });
-        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.colorPrimary)));
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setBackgroundDrawable(getDrawable(R.drawable.toolbar_background));
+        }
 
         Issue issue = getIntent().getParcelableExtra(ISSUE_EXTRA);
         if (issue != null) {
