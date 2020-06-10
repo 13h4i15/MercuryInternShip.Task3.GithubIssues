@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -24,17 +25,24 @@ public final class IssuesViewModel extends ViewModel {
     private final static String userName = "alibaba";
     private final static String projectName = "atlas";
 
-    private final ReplaySubject<List<Issue>> issuesReplaySubject = ReplaySubject.create();
-    private Disposable issuesAllSingleDisposable;
+    private final ReplaySubject<List<Issue>> replaySubject = ReplaySubject.create();
+    private Disposable disposable;
+    private GithubApi api = AppNetworkService.getGithubApi();
     private int page;
 
     public IssuesViewModel() {
         reloadIssues();
     }
 
+    @Override
+    protected void onCleared() {
+        if (disposable != null && !disposable.isDisposed()) disposable.dispose();
+        super.onCleared();
+    }
+
     public void reloadIssues() {
         page = 1;
-        issuesReplaySubject.cleanupBuffer();
+        replaySubject.cleanupBuffer();
         loadIssueList();
     }
 
@@ -43,27 +51,25 @@ public final class IssuesViewModel extends ViewModel {
     }
 
     @NonNull
-    public ReplaySubject<List<Issue>> getIssuesReplaySubject() {
-        return issuesReplaySubject;
+    public Observable<List<Issue>> getIssuesObservable() {
+        return replaySubject;
     }
 
     private void loadIssueList() {
-        if (issuesAllSingleDisposable != null && !issuesAllSingleDisposable.isDisposed()) return;
-
-        Single<List<Issue>> issuesPageSingle = AppNetworkService.getGithubApi().getProjectIssues(
+        if (disposable != null && !disposable.isDisposed()) return;
+        Single<List<Issue>> single = api.getProjectIssues(
                 userName, projectName, GithubApi.STATE_OPEN, page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
-
-        issuesAllSingleDisposable = issuesPageSingle.subscribe(issueList -> {
-            if (issueList != null && issueList.size() != 0) {
-                issuesReplaySubject.onNext(issueList);
+        disposable = single.subscribe(issues -> {
+            if (!issues.isEmpty()) {
+                replaySubject.onNext(issues);
                 ++page;
             } else {
-                issuesReplaySubject.onNext(new ArrayList<>());
+                replaySubject.onNext(new ArrayList<>());
             }
         }, error -> {
-            issuesReplaySubject.onNext(new ArrayList<>());
+            replaySubject.onNext(new ArrayList<>());
             Log.e(LOADING_ERROR_LOG_TAG, error.toString());
         });
     }

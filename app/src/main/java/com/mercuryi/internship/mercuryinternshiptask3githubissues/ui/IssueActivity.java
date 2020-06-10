@@ -20,9 +20,6 @@ public class IssueActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setBackgroundDrawable(getDrawable(R.drawable.toolbar_background));
-        }
 
         Issue issue = getIntent().getParcelableExtra(ISSUE_EXTRA);
         if (issue != null) {

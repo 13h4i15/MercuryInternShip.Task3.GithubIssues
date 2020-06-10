@@ -15,45 +15,41 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 public class MainActivity extends AppCompatActivity implements IssueListFragment.IssueListFragmentContainer {
     private final static int ISSUE_ACTIVITY_REQUEST_CODE = 0;
 
-    private IssueListFragment issueListFragment;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
-            createListFragment();
-        } else {
-            issueListFragment = (IssueListFragment) getSupportFragmentManager().getFragments().get(0);
-        }
+        if (savedInstanceState == null) createListFragment();
 
-        if (isIssueFragmentContainerExist()) {
-            createIssueFragment(null);
-        }
+        if (isIssueFragmentContainerExist()) createIssueFragment(null);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ISSUE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK && issueListFragment != null) {
+
+        IssueListFragment issueListFragment = (IssueListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.list_fragment);
+        if (requestCode == ISSUE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK
+                && issueListFragment != null) {
             issueListFragment.setSelectedIssue(null);
         }
     }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        issueListFragment = IssueListFragment.newInstance();
-        fragmentTransaction.replace(R.id.list_fragment, issueListFragment);
+        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance());
         fragmentTransaction.commit();
     }
 
+    @Override
     @NonNull
-    public IssueListFragment.OnIssueItemClickListener requestIssueItemClickListener() {
+    public IssueListFragment.OnIssueItemClickListener getIssueItemClickListener() {
         return issue -> {
-            if (issueListFragment == null) {
-                return;
-            }
+            IssueListFragment issueListFragment = (IssueListFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.list_fragment);
+            if (issueListFragment == null) return;
             issueListFragment.setSelectedIssue(issue);
             if (!isIssueFragmentContainerExist()) {
                 Intent intent = new Intent(this, IssueActivity.class);

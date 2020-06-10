@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
-    private final List<Issue> issueList = new ArrayList<>();
-    private IssueListFragment.OnIssueItemClickListener onIssueItemClickListener;
+    private final List<Issue> issues = new ArrayList<>();
+    private IssueListFragment.OnIssueItemClickListener itemClickListener;
     private Issue selectedIssue;
 
     public IssueRecyclerViewAdapter(Issue issue) {
@@ -30,12 +30,13 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_issue, parent, false);
         ViewHolder holder = new ViewHolder(view);
-        view.setOnClickListener(v ->
-        {
+        view.setOnClickListener(v -> {
             if (!v.isSelected()) {
-                selectedIssue = issueList.get(holder.getLayoutPosition());
+                selectedIssue = issues.get(holder.getLayoutPosition());
                 notifyDataSetChanged();
-                onIssueItemClickListener.onClick(issueList.get(holder.getLayoutPosition()));
+                if (itemClickListener != null) {
+                    itemClickListener.onClick(issues.get(holder.getLayoutPosition()));
+                }
             }
         });
         return holder;
@@ -43,20 +44,20 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.itemView.setSelected(issueList.indexOf(selectedIssue) == position);
-        Issue issue = issueList.get(position);
+        holder.itemView.setSelected(issues.indexOf(selectedIssue) == position);
+        Issue issue = issues.get(position);
         holder.issueTitle.setText(issue.getTitle());
         holder.issueId.setText(issue.getId());
         holder.issueUserLogin.setText(issue.getUser().getLogin());
-        picassoImageLoader(issue.getUser().getAvatarUrl(), holder.userAvatarImage);
+        loadUserAvatarByUrl(issue.getUser().getAvatarUrl(), holder.userAvatarImage);
     }
 
     @Override
     public int getItemCount() {
-        return issueList.size();
+        return issues.size();
     }
 
-    private static void picassoImageLoader(@NonNull String imageUrl, @NonNull ImageView imageView) {
+    private static void loadUserAvatarByUrl(@NonNull String imageUrl, @NonNull ImageView imageView) {
         Picasso.get()
                 .load(imageUrl)
                 .fit()
@@ -65,8 +66,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     }
 
 
-    public void setOnIssueItemClickListener(@NonNull IssueListFragment.OnIssueItemClickListener onIssueItemClickListener) {
-        this.onIssueItemClickListener = onIssueItemClickListener;
+    public void setOnItemClickListener(@NonNull IssueListFragment.OnIssueItemClickListener itemClickListener) {
+        this.itemClickListener = itemClickListener;
     }
 
     public void setSelectedIssue(Issue issue) {
@@ -74,13 +75,13 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         notifyDataSetChanged();
     }
 
-    public void addToIssueList(@NonNull List<Issue> issueList) {
-        this.issueList.addAll(issueList);
+    public void addToIssues(@NonNull List<Issue> issueList) {
+        this.issues.addAll(issueList);
         notifyDataSetChanged();
     }
 
-    public void clearIssueList() {
-        this.issueList.clear();
+    public void clearIssues() {
+        this.issues.clear();
         notifyDataSetChanged();
     }
 
