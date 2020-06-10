@@ -29,10 +29,11 @@ public class IssueListFragment extends Fragment {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
     private final static String ISSUE_EXTRA = "issue";
 
-    private OnIssueItemClickListener itemClickListener;
+    private OnIssueItemSelectListener itemClickListener;
     private Issue selectedIssue;
     private IssueRecyclerViewAdapter adapter;
     private Disposable disposable;
+    private boolean isReload = false;
 
     public static IssueListFragment newInstance() {
         return new IssueListFragment();
@@ -42,7 +43,7 @@ public class IssueListFragment extends Fragment {
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         if (context instanceof IssueListFragmentContainer) {
-            itemClickListener = ((IssueListFragmentContainer) context).getIssueItemClickListener();
+            itemClickListener = ((IssueListFragmentContainer) context).getIssueItemSelectListener();
         }
     }
 
@@ -56,7 +57,9 @@ public class IssueListFragment extends Fragment {
     public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(root, savedInstanceState);
 
-        if (savedInstanceState != null) selectedIssue = savedInstanceState.getParcelable(ISSUE_EXTRA);
+        if (savedInstanceState != null) {
+            selectedIssue = savedInstanceState.getParcelable(ISSUE_EXTRA);
+        }
 
         RecyclerView recyclerView = root.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -64,13 +67,14 @@ public class IssueListFragment extends Fragment {
 
         recyclerView.addItemDecoration(new VerticalSpaceItemDecoration());
         recyclerView.setAdapter(adapter);
-        if (itemClickListener != null) adapter.setOnItemClickListener(itemClickListener);
+        if (itemClickListener != null) adapter.setOnItemSelectListener(itemClickListener);
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
+
         SwipeRefreshLayout.OnRefreshListener refreshListener = () -> {
-            adapter.clearIssues();
+            isReload = true;
             viewModel.reloadIssues();
         };
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
@@ -80,6 +84,9 @@ public class IssueListFragment extends Fragment {
         disposable = observable.subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
             if (!issues.isEmpty()) {
+                if (isReload) {
+                    adapter.clearIssues();
+                }
                 recyclerView.setVisibility(View.VISIBLE);
                 textView.setVisibility(View.GONE);
                 adapter.addToIssues(issues);
@@ -87,9 +94,11 @@ public class IssueListFragment extends Fragment {
                 recyclerView.setVisibility(View.GONE);
                 textView.setVisibility(View.VISIBLE);
             }
+            isReload = false;
         }, error -> {
             Log.e(LOADING_ERROR_LOG_TAG, error.toString());
             swipeRefreshLayout.setRefreshing(false);
+            isReload = false;
         });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -100,7 +109,7 @@ public class IssueListFragment extends Fragment {
             }
         });
 
-        if (selectedIssue != null) itemClickListener.onClick(selectedIssue);
+        if (selectedIssue != null) itemClickListener.onSelect(selectedIssue);
     }
 
     @Override
@@ -121,10 +130,10 @@ public class IssueListFragment extends Fragment {
     }
 
     public interface IssueListFragmentContainer {
-        OnIssueItemClickListener getIssueItemClickListener();
+        OnIssueItemSelectListener getIssueItemSelectListener();
     }
 
-    public interface OnIssueItemClickListener {
-        void onClick(Issue issue);
+    public interface OnIssueItemSelectListener {
+        void onSelect(Issue issue);
     }
 }

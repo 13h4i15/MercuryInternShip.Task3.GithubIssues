@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
 
     @Override
     @NonNull
-    public IssueListFragment.OnIssueItemClickListener getIssueItemClickListener() {
+    public IssueListFragment.OnIssueItemSelectListener getIssueItemSelectListener() {
         return issue -> {
             IssueListFragment issueListFragment = (IssueListFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.list_fragment);

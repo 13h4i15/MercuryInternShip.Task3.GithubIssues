@@ -42,12 +42,11 @@ public final class IssuesViewModel extends ViewModel {
 
     public void reloadIssues() {
         page = 1;
-        replaySubject.cleanupBuffer();
-        loadIssueList();
+        loadIssueList(true);
     }
 
     public void loadNewIssues() {
-        loadIssueList();
+        loadIssueList(false);
     }
 
     @NonNull
@@ -55,7 +54,7 @@ public final class IssuesViewModel extends ViewModel {
         return replaySubject;
     }
 
-    private void loadIssueList() {
+    private void loadIssueList(boolean isReload) {
         if (disposable != null && !disposable.isDisposed()) return;
         Single<List<Issue>> single = api.getProjectIssues(
                 userName, projectName, GithubApi.STATE_OPEN, page)
@@ -63,14 +62,27 @@ public final class IssuesViewModel extends ViewModel {
                 .observeOn(AndroidSchedulers.mainThread());
         disposable = single.subscribe(issues -> {
             if (!issues.isEmpty()) {
+                if (isReload) {
+                    replaySubject.cleanupBuffer();
+                }
                 replaySubject.onNext(issues);
                 ++page;
             } else {
+                if (isReload) {
+                    setPageByValuesLength();
+                }
                 replaySubject.onNext(new ArrayList<>());
             }
         }, error -> {
+            if (isReload) {
+                setPageByValuesLength();
+            }
             replaySubject.onNext(new ArrayList<>());
             Log.e(LOADING_ERROR_LOG_TAG, error.toString());
         });
+    }
+
+    private void setPageByValuesLength() {
+        page = replaySubject.getValues().length + 1;
     }
 }

@@ -18,7 +18,7 @@ import java.util.List;
 
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
     private final List<Issue> issues = new ArrayList<>();
-    private IssueListFragment.OnIssueItemClickListener itemClickListener;
+    private IssueListFragment.OnIssueItemSelectListener itemSelectListener;
     private Issue selectedIssue;
 
     public IssueRecyclerViewAdapter(Issue issue) {
@@ -34,8 +34,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
             if (!v.isSelected()) {
                 selectedIssue = issues.get(holder.getLayoutPosition());
                 notifyDataSetChanged();
-                if (itemClickListener != null) {
-                    itemClickListener.onClick(issues.get(holder.getLayoutPosition()));
+                if (itemSelectListener != null) {
+                    itemSelectListener.onSelect(issues.get(holder.getLayoutPosition()));
                 }
             }
         });
@@ -66,8 +66,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     }
 
 
-    public void setOnItemClickListener(@NonNull IssueListFragment.OnIssueItemClickListener itemClickListener) {
-        this.itemClickListener = itemClickListener;
+    public void setOnItemSelectListener(@NonNull IssueListFragment.OnIssueItemSelectListener itemSelectListener) {
+        this.itemSelectListener = itemSelectListener;
     }
 
     public void setSelectedIssue(Issue issue) {
