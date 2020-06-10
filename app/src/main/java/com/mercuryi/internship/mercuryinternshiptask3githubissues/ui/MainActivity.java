@@ -1,19 +1,23 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
-import android.content.Intent;
 import android.os.Bundle;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 public class MainActivity extends AppCompatActivity implements IssueListFragment.IssueListFragmentContainer {
-    private final static int ISSUE_ACTIVITY_REQUEST_CODE = 0;
+    private final static String ISSUE_LIST_FRAGMENT_TAG = "issueListFragment";
+    private final static String ISSUE_FRAGMENT_TAG = "issueFragment";
+
+    private Toolbar toolbar;
+    private IssuesViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,54 +26,54 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
 
         if (savedInstanceState == null) createListFragment();
 
-        if (isIssueFragmentContainerExist()) createIssueFragment(null);
+        viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
+
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        IssueListFragment issueListFragment = (IssueListFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.list_fragment);
-        if (requestCode == ISSUE_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK
-                && issueListFragment != null) {
-            issueListFragment.setSelectedIssue(null);
-        }
-    }
-
-    private void createListFragment() {
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance());
-        fragmentTransaction.commit();
+    public void onBackPressed() {
+        viewModel.setSelectedIssueId(null);
+        setToolbarNavigationVisability(false);
+        super.onBackPressed();
     }
 
     @Override
     @NonNull
     public IssueListFragment.OnIssueItemSelectListener getIssueItemSelectListener() {
         return issue -> {
-            IssueListFragment issueListFragment = (IssueListFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.list_fragment);
-            if (issueListFragment == null) return;
-            issueListFragment.setSelectedIssue(issue);
-            if (!isIssueFragmentContainerExist()) {
-                Intent intent = new Intent(this, IssueActivity.class);
-                intent.putExtra(IssueActivity.ISSUE_EXTRA, issue);
-                startActivityForResult(intent, ISSUE_ACTIVITY_REQUEST_CODE);
-            } else {
-                createIssueFragment(issue);
-            }
+            setToolbarNavigationVisability(true);
+            createIssueFragment(issue);
         };
     }
 
-    private void createIssueFragment(Issue issue) {
+    private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        fragmentTransaction.replace(R.id.issue_fragment, IssueFragment.newInstance(issue));
+        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance(), ISSUE_LIST_FRAGMENT_TAG);
+        fragmentTransaction.commit();
+    }
+
+    private void createIssueFragment(@NonNull Issue issue) {
+        getSupportFragmentManager().popBackStack();
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.add(isIssueFragmentContainerExist() ? R.id.issue_fragment : R.id.list_fragment,
+                IssueFragment.newInstance(issue), ISSUE_FRAGMENT_TAG);
+        fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
 
     private boolean isIssueFragmentContainerExist() {
         FragmentContainerView fragmentContainerView = findViewById(R.id.issue_fragment);
         return fragmentContainerView != null;
+    }
+
+    private void setToolbarNavigationVisability(boolean isVisible) {
+        if (isVisible) {
+            toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+        } else {
+            toolbar.setNavigationIcon(null);
+        }
     }
 }

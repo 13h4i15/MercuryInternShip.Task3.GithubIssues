@@ -27,12 +27,10 @@ import io.reactivex.rxjava3.disposables.Disposable;
 
 public class IssueListFragment extends Fragment {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
-    private final static String ISSUE_EXTRA = "issue";
 
+    private Disposable issuesDisposable, selectedIssueDisposable;
     private OnIssueItemSelectListener itemClickListener;
-    private Issue selectedIssue;
     private IssueRecyclerViewAdapter adapter;
-    private Disposable disposable;
     private boolean isReload = false;
 
     public static IssueListFragment newInstance() {
@@ -57,35 +55,33 @@ public class IssueListFragment extends Fragment {
     public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(root, savedInstanceState);
 
-        if (savedInstanceState != null) {
-            selectedIssue = savedInstanceState.getParcelable(ISSUE_EXTRA);
-        }
-
         RecyclerView recyclerView = root.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new IssueRecyclerViewAdapter(selectedIssue);
+        adapter = new IssueRecyclerViewAdapter();
 
         recyclerView.addItemDecoration(new VerticalSpaceItemDecoration());
         recyclerView.setAdapter(adapter);
-        if (itemClickListener != null) adapter.setOnItemSelectListener(itemClickListener);
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
+        if (itemClickListener != null) adapter.setOnItemSelectListener(issue -> {
+            viewModel.setSelectedIssueId(issue.getId());
+        });
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
-
         SwipeRefreshLayout.OnRefreshListener refreshListener = () -> {
             isReload = true;
             viewModel.reloadIssues();
         };
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
 
-        Observable<List<Issue>> observable = viewModel.getIssuesObservable();
+        Observable<List<Issue>> issuesObservable = viewModel.getIssuesObservable();
         TextView textView = root.findViewById(R.id.empty_list_message);
-        disposable = observable.subscribe(issues -> {
+        issuesDisposable = issuesObservable.subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
             if (!issues.isEmpty()) {
                 if (isReload) {
                     adapter.clearIssues();
+                    getParentFragmentManager().popBackStack();
                 }
                 recyclerView.setVisibility(View.VISIBLE);
                 textView.setVisibility(View.GONE);
@@ -101,6 +97,15 @@ public class IssueListFragment extends Fragment {
             isReload = false;
         });
 
+        Observable<String> selectedIssueObservable = viewModel.getSelectedIssueObservable();
+        selectedIssueDisposable = selectedIssueObservable.subscribe(issueId -> {
+            Issue selectedIssue = adapter.getIssueById(issueId);
+            adapter.setSelectedIssueId(issueId);
+            if (selectedIssue != null && itemClickListener != null) {
+                itemClickListener.onSelect(selectedIssue);
+            }
+        });
+
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -108,25 +113,17 @@ public class IssueListFragment extends Fragment {
                 if (!recyclerView.canScrollVertically(1)) viewModel.loadNewIssues();
             }
         });
-
-        if (selectedIssue != null) itemClickListener.onSelect(selectedIssue);
     }
 
     @Override
     public void onDestroyView() {
-        if (disposable != null && !disposable.isDisposed()) disposable.dispose();
+        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
+            issuesDisposable.dispose();
+        }
+        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
+            selectedIssueDisposable.dispose();
+        }
         super.onDestroyView();
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable(ISSUE_EXTRA, selectedIssue);
-    }
-
-    public void setSelectedIssue(@Nullable Issue selectedIssue) {
-        this.selectedIssue = selectedIssue;
-        if (adapter != null) adapter.setSelectedIssue(selectedIssue);
     }
 
     public interface IssueListFragmentContainer {
@@ -134,6 +131,6 @@ public class IssueListFragment extends Fragment {
     }
 
     public interface OnIssueItemSelectListener {
-        void onSelect(Issue issue);
+        void onSelect(@NonNull Issue issue);
     }
 }

@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
@@ -19,11 +20,7 @@ import java.util.List;
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
     private final List<Issue> issues = new ArrayList<>();
     private IssueListFragment.OnIssueItemSelectListener itemSelectListener;
-    private Issue selectedIssue;
-
-    public IssueRecyclerViewAdapter(Issue issue) {
-        this.selectedIssue = issue;
-    }
+    private String selectedIssueId;
 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -31,12 +28,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
                 .inflate(R.layout.item_issue, parent, false);
         ViewHolder holder = new ViewHolder(view);
         view.setOnClickListener(v -> {
-            if (!v.isSelected()) {
-                selectedIssue = issues.get(holder.getLayoutPosition());
-                notifyDataSetChanged();
-                if (itemSelectListener != null) {
-                    itemSelectListener.onSelect(issues.get(holder.getLayoutPosition()));
-                }
+            if (!v.isSelected() && itemSelectListener != null) {
+                itemSelectListener.onSelect(issues.get(holder.getLayoutPosition()));
             }
         });
         return holder;
@@ -44,8 +37,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.itemView.setSelected(issues.indexOf(selectedIssue) == position);
         Issue issue = issues.get(position);
+        holder.itemView.setSelected(issue.getId().equals(selectedIssueId));
         holder.issueTitle.setText(issue.getTitle());
         holder.issueId.setText(issue.getId());
         holder.issueUserLogin.setText(issue.getUser().getLogin());
@@ -70,8 +63,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         this.itemSelectListener = itemSelectListener;
     }
 
-    public void setSelectedIssue(Issue issue) {
-        this.selectedIssue = issue;
+    public void setSelectedIssueId(@NonNull String issueId) {
+        this.selectedIssueId = issueId;
         notifyDataSetChanged();
     }
 
@@ -83,6 +76,15 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     public void clearIssues() {
         this.issues.clear();
         notifyDataSetChanged();
+    }
+
+    @Nullable
+    public Issue getIssueById(@NonNull String id) {
+        // streams and filter from api 24, current min api 21, because of this just looping;
+        for (Issue issue : issues) {
+            if (issue.getId().equals(id)) return issue;
+        }
+        return null;
     }
 
     public final static class ViewHolder extends RecyclerView.ViewHolder {

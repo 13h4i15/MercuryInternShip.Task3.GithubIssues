@@ -14,7 +14,8 @@ final class VerticalSpaceItemDecoration extends RecyclerView.ItemDecoration {
     public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, RecyclerView parent,
                                @NonNull RecyclerView.State state) {
         int dimen = view.getResources().getDimensionPixelSize(R.dimen.issue_item_recycler_distance);
-        if (parent.getChildAdapterPosition(view) != parent.getAdapter().getItemCount() - 1) {
+        if (parent.getAdapter() != null &&
+                parent.getChildAdapterPosition(view) != parent.getAdapter().getItemCount() - 1) {
             outRect.bottom = dimen;
         }
     }

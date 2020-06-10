@@ -15,5 +15,5 @@ public interface GithubApi {
 
     @GET("/repos/{user}/{project}/issues")
     Single<List<Issue>> getProjectIssues(@Path("user") String userName, @Path("project") String projectName,
-                                             @Query("state") String state, @Query("page") int page);
+                                         @Query("state") String state, @Query("page") int page);
 }

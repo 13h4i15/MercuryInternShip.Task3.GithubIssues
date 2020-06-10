@@ -17,7 +17,7 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 public class IssueFragment extends Fragment {
     private final static String EXTRA_PARCELABLE_ISSUE_KEY = "selectedIssue";
 
-    public static IssueFragment newInstance(Issue selectedIssue) {
+    public static IssueFragment newInstance(@NonNull Issue selectedIssue) {
         IssueFragment issueFragment = new IssueFragment();
         Bundle args = new Bundle();
         args.putParcelable(EXTRA_PARCELABLE_ISSUE_KEY, selectedIssue);
