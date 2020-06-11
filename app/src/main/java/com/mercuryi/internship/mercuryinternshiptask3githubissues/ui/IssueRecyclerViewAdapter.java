@@ -20,7 +20,7 @@ import java.util.List;
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
     private final List<Issue> issues = new ArrayList<>();
     private IssueListFragment.OnIssueItemSelectListener itemSelectListener;
-    private String selectedIssueId;
+    private Issue selectedIssue;
 
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -38,7 +38,7 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Issue issue = issues.get(position);
-        holder.itemView.setSelected(issue.getId().equals(selectedIssueId));
+        holder.itemView.setSelected(issue.equals(selectedIssue));
         holder.issueTitle.setText(issue.getTitle());
         holder.issueId.setText(issue.getId());
         holder.issueUserLogin.setText(issue.getUser().getLogin());
@@ -63,8 +63,8 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         this.itemSelectListener = itemSelectListener;
     }
 
-    public void setSelectedIssueId(@NonNull String issueId) {
-        this.selectedIssueId = issueId;
+    public void setSelectedIssue(@Nullable Issue issue) {
+        this.selectedIssue = issue;
         notifyDataSetChanged();
     }
 
@@ -76,15 +76,6 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     public void clearIssues() {
         this.issues.clear();
         notifyDataSetChanged();
-    }
-
-    @Nullable
-    public Issue getIssueById(@NonNull String id) {
-        // streams and filter from api 24, current min api 21, because of this just looping;
-        for (Issue issue : issues) {
-            if (issue.getId().equals(id)) return issue;
-        }
-        return null;
     }
 
     public final static class ViewHolder extends RecyclerView.ViewHolder {

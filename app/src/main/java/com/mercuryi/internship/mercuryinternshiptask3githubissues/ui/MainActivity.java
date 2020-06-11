@@ -1,6 +1,7 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
@@ -11,8 +12,10 @@ import android.os.Bundle;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
-public class MainActivity extends AppCompatActivity implements IssueListFragment.IssueListFragmentContainer {
+import io.reactivex.rxjava3.disposables.Disposable;
 
+public class MainActivity extends AppCompatActivity {
+    private Disposable selectedIssueDisposable;
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
 
@@ -23,28 +26,39 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
 
         if (savedInstanceState == null) createListFragment();
 
-        viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
-
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
+
+        viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
+            selectedIssue.ifPresent(issue -> {
+                setToolbarNavigationVisibility(true);
+                createIssueFragment(issue);
+            });
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
+            selectedIssueDisposable.dispose();
+        }
+        super.onDestroy();
     }
 
     @Override
     public void onBackPressed() {
-        viewModel.setSelectedIssueId(null);
+        viewModel.setSelectedIssue(null);
         setToolbarNavigationVisibility(false);
         super.onBackPressed();
     }
 
-    @Override
-    @NonNull
-    public IssueListFragment.OnIssueItemSelectListener getIssueItemSelectListener() {
-        return issue -> {
-            setToolbarNavigationVisibility(true);
-            createIssueFragment(issue);
-        };
-    }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -66,10 +80,12 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
     }
 
     private void setToolbarNavigationVisibility(boolean isVisible) {
-        if (isVisible) {
-            toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
-        } else {
-            toolbar.setNavigationIcon(null);
+        if (toolbar != null) {
+            if (isVisible) {
+                toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+            } else {
+                toolbar.setNavigationIcon(null);
+            }
         }
     }
 }
