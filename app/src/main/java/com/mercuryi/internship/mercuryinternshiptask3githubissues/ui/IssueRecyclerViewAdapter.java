@@ -42,7 +42,7 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         holder.issueTitle.setText(issue.getTitle());
         holder.issueId.setText(issue.getId());
         holder.issueUserLogin.setText(issue.getUser().getLogin());
-        loadUserAvatarByUrl(issue.getUser().getAvatarUrl(), holder.userAvatarImage);
+        loadUserAvatar(issue.getUser().getAvatarUrl(), holder.userAvatarImage);
     }
 
     @Override
@@ -50,7 +50,7 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         return issues.size();
     }
 
-    private static void loadUserAvatarByUrl(@NonNull String imageUrl, @NonNull ImageView imageView) {
+    private static void loadUserAvatar(@NonNull String imageUrl, @NonNull ImageView imageView) {
         Picasso.get()
                 .load(imageUrl)
                 .fit()

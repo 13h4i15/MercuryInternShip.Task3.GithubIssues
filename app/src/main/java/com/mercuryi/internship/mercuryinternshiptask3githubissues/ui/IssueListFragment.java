@@ -29,7 +29,7 @@ public class IssueListFragment extends Fragment {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
 
     private Disposable issuesDisposable, selectedIssueDisposable;
-    private OnIssueItemSelectListener itemClickListener;
+    private OnIssueItemSelectListener itemSelectListener;
     private IssueRecyclerViewAdapter adapter;
     private boolean isReload = false;
 
@@ -41,7 +41,7 @@ public class IssueListFragment extends Fragment {
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         if (context instanceof IssueListFragmentContainer) {
-            itemClickListener = ((IssueListFragmentContainer) context).getIssueItemSelectListener();
+            itemSelectListener = ((IssueListFragmentContainer) context).getIssueItemSelectListener();
         }
     }
 
@@ -63,7 +63,7 @@ public class IssueListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
-        if (itemClickListener != null) adapter.setOnItemSelectListener(issue -> {
+        if (itemSelectListener != null) adapter.setOnItemSelectListener(issue -> {
             viewModel.setSelectedIssueId(issue.getId());
         });
 
@@ -75,20 +75,21 @@ public class IssueListFragment extends Fragment {
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
 
         Observable<List<Issue>> issuesObservable = viewModel.getIssuesObservable();
-        TextView textView = root.findViewById(R.id.empty_list_message);
+        TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
         issuesDisposable = issuesObservable.subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
             if (!issues.isEmpty()) {
                 if (isReload) {
-                    adapter.clearIssues();
+                    // Deleting the issue details screen after successful reloading
                     getParentFragmentManager().popBackStack();
+                    adapter.clearIssues();
                 }
                 recyclerView.setVisibility(View.VISIBLE);
-                textView.setVisibility(View.GONE);
+                emptyListMessageView.setVisibility(View.GONE);
                 adapter.addToIssues(issues);
             } else if (adapter.getItemCount() == 0) {
                 recyclerView.setVisibility(View.GONE);
-                textView.setVisibility(View.VISIBLE);
+                emptyListMessageView.setVisibility(View.VISIBLE);
             }
             isReload = false;
         }, error -> {
@@ -101,8 +102,8 @@ public class IssueListFragment extends Fragment {
         selectedIssueDisposable = selectedIssueObservable.subscribe(issueId -> {
             Issue selectedIssue = adapter.getIssueById(issueId);
             adapter.setSelectedIssueId(issueId);
-            if (selectedIssue != null && itemClickListener != null) {
-                itemClickListener.onSelect(selectedIssue);
+            if (selectedIssue != null && itemSelectListener != null) {
+                itemSelectListener.onSelect(selectedIssue);
             }
         });
 

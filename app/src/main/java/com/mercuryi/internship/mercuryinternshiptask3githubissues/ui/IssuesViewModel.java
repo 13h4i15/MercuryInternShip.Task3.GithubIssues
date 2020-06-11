@@ -15,7 +15,6 @@ import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -28,11 +27,11 @@ public final class IssuesViewModel extends ViewModel {
     private final static String userName = "alibaba";
     private final static String projectName = "atlas";
 
-    private final ReplaySubject<List<Issue>> replaySubject = ReplaySubject.create();
-    private final BehaviorSubject<String> behaviorSubject = BehaviorSubject.createDefault(BEHAVIOR_SUBJECT_DEFAULT);
+    private final ReplaySubject<List<Issue>> issuesSubject = ReplaySubject.create();
+    private final BehaviorSubject<String> selectedIssueSubject = BehaviorSubject.createDefault(BEHAVIOR_SUBJECT_DEFAULT);
     private final GithubApi api = AppNetworkService.getGithubApi();
     private Disposable disposable;
-    private int page;
+    private int currentPage;
 
     public IssuesViewModel() {
         reloadIssues();
@@ -45,62 +44,52 @@ public final class IssuesViewModel extends ViewModel {
     }
 
     public void reloadIssues() {
-        page = 1;
-        loadIssueList(true);
+        loadIssueList(1);
     }
 
     public void loadNewIssues() {
-        loadIssueList(false);
+        loadIssueList(currentPage);
     }
 
     public void setSelectedIssueId(@Nullable String id) {
         if (id == null) {
-            behaviorSubject.onNext(BEHAVIOR_SUBJECT_DEFAULT);
+            selectedIssueSubject.onNext(BEHAVIOR_SUBJECT_DEFAULT);
         } else {
-            behaviorSubject.onNext(id);
+            selectedIssueSubject.onNext(id);
         }
     }
 
     @NonNull
     public Observable<List<Issue>> getIssuesObservable() {
-        return replaySubject;
+        return issuesSubject;
     }
 
     @NonNull
     public Observable<String> getSelectedIssueObservable() {
-        return behaviorSubject;
+        return selectedIssueSubject;
     }
 
-    private void loadIssueList(boolean isReload) {
+    private void loadIssueList(int page) {
         if (disposable != null && !disposable.isDisposed()) return;
-        Single<List<Issue>> single = api.getProjectIssues(
+        disposable = api.getProjectIssues(
                 userName, projectName, GithubApi.STATE_OPEN, page)
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread());
-        disposable = single.subscribe(issues -> {
-            if (!issues.isEmpty()) {
-                if (isReload) {
-                    behaviorSubject.onNext(BEHAVIOR_SUBJECT_DEFAULT);
-                    replaySubject.cleanupBuffer();
-                }
-                replaySubject.onNext(issues);
-                ++page;
-            } else {
-                if (isReload) {
-                    setPageByValuesLength();
-                }
-                replaySubject.onNext(new ArrayList<>());
-            }
-        }, error -> {
-            if (isReload) {
-                setPageByValuesLength();
-            }
-            replaySubject.onNext(new ArrayList<>());
-            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
-        });
-    }
-
-    private void setPageByValuesLength() {
-        page = replaySubject.getValues().length + 1;
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(issues -> {
+                    if (!issues.isEmpty()) {
+                        if (page == 1) {
+                            selectedIssueSubject.onNext(BEHAVIOR_SUBJECT_DEFAULT);
+                            issuesSubject.cleanupBuffer();
+                            this.currentPage = 1;
+                        }
+                        issuesSubject.onNext(issues);
+                        ++this.currentPage;
+                    } else {
+                        issuesSubject.onNext(new ArrayList<>());
+                    }
+                }, error -> {
+                    issuesSubject.onNext(new ArrayList<>());
+                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+                });
     }
 }

@@ -3,7 +3,6 @@ package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -13,8 +12,6 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 public class MainActivity extends AppCompatActivity implements IssueListFragment.IssueListFragmentContainer {
-    private final static String ISSUE_LIST_FRAGMENT_TAG = "issueListFragment";
-    private final static String ISSUE_FRAGMENT_TAG = "issueFragment";
 
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
@@ -36,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
     @Override
     public void onBackPressed() {
         viewModel.setSelectedIssueId(null);
-        setToolbarNavigationVisability(false);
+        setToolbarNavigationVisibility(false);
         super.onBackPressed();
     }
 
@@ -44,32 +41,31 @@ public class MainActivity extends AppCompatActivity implements IssueListFragment
     @NonNull
     public IssueListFragment.OnIssueItemSelectListener getIssueItemSelectListener() {
         return issue -> {
-            setToolbarNavigationVisability(true);
+            setToolbarNavigationVisibility(true);
             createIssueFragment(issue);
         };
     }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance(), ISSUE_LIST_FRAGMENT_TAG);
+        fragmentTransaction.replace(R.id.list_fragment, IssueListFragment.newInstance());
         fragmentTransaction.commit();
     }
 
     private void createIssueFragment(@NonNull Issue issue) {
         getSupportFragmentManager().popBackStack();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.add(isIssueFragmentContainerExist() ? R.id.issue_fragment : R.id.list_fragment,
-                IssueFragment.newInstance(issue), ISSUE_FRAGMENT_TAG);
+        fragmentTransaction.add(doesIssueFragmentContainerExist() ? R.id.issue_fragment : R.id.list_fragment,
+                IssueFragment.newInstance(issue));
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
 
-    private boolean isIssueFragmentContainerExist() {
-        FragmentContainerView fragmentContainerView = findViewById(R.id.issue_fragment);
-        return fragmentContainerView != null;
+    private boolean doesIssueFragmentContainerExist() {
+        return findViewById(R.id.issue_fragment) != null;
     }
 
-    private void setToolbarNavigationVisability(boolean isVisible) {
+    private void setToolbarNavigationVisibility(boolean isVisible) {
         if (isVisible) {
             toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
         } else {
