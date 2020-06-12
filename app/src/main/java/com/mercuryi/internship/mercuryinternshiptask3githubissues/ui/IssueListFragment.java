@@ -17,7 +17,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -57,9 +56,7 @@ public class IssueListFragment extends Fragment {
         issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
             swipeRefreshLayout.setRefreshing(false);
             if (!issues.isEmpty()) {
-                if (viewModel.getNextPage() - 1 == 1) {
-                    // Deleting the issue details screen after successful reloading
-                    getParentFragmentManager().popBackStack();
+                if (viewModel.getCurrentPage() == 1) {
                     adapter.clearIssues();
                 }
                 recyclerView.setVisibility(View.VISIBLE);
@@ -96,9 +93,5 @@ public class IssueListFragment extends Fragment {
             selectedIssueDisposable.dispose();
         }
         super.onDestroyView();
-    }
-
-    public interface OnIssueItemSelectListener {
-        void onSelect(@NonNull Issue issue);
     }
 }

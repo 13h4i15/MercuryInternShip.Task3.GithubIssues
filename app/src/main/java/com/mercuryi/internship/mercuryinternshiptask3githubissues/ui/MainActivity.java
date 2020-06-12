@@ -1,7 +1,6 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
@@ -15,7 +14,7 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 public class MainActivity extends AppCompatActivity {
-    private Disposable selectedIssueDisposable;
+    private Disposable issuesDisposable, selectedIssueDisposable;
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
 
@@ -31,11 +30,13 @@ public class MainActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
         viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
-    }
 
-    @Override
-    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
+        issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
+            if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
+                getSupportFragmentManager().popBackStack();
+            }
+        });
+
         selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
             selectedIssue.ifPresent(issue -> {
                 setToolbarNavigationVisibility(true);
@@ -46,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
+            issuesDisposable.dispose();
+        }
         if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
             selectedIssueDisposable.dispose();
         }

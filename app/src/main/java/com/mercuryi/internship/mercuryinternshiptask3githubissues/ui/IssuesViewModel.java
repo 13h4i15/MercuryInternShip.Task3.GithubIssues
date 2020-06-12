@@ -65,8 +65,8 @@ public final class IssuesViewModel extends ViewModel {
         return selectedIssueSubject;
     }
 
-    public int getNextPage() {
-        return nextPage;
+    public int getCurrentPage() {
+        return nextPage - 1;
     }
 
     private void loadIssueList(int page) {
@@ -80,10 +80,9 @@ public final class IssuesViewModel extends ViewModel {
                         if (page == 1) {
                             selectedIssueSubject.onNext(Optional.empty());
                             issuesSubject.cleanupBuffer();
-                            this.nextPage = 1;
                         }
                         issuesSubject.onNext(issues);
-                        ++this.nextPage;
+                        nextPage = page + 1;
                     } else {
                         issuesSubject.onNext(new ArrayList<>());
                     }

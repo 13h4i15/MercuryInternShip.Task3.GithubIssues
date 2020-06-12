@@ -19,7 +19,7 @@ import java.util.List;
 
 final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerViewAdapter.ViewHolder> {
     private final List<Issue> issues = new ArrayList<>();
-    private IssueListFragment.OnIssueItemSelectListener itemSelectListener;
+    private OnIssueItemSelectListener itemSelectListener;
     private Issue selectedIssue;
 
     @Override
@@ -59,7 +59,7 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     }
 
 
-    public void setOnItemSelectListener(@NonNull IssueListFragment.OnIssueItemSelectListener itemSelectListener) {
+    public void setOnItemSelectListener(@NonNull OnIssueItemSelectListener itemSelectListener) {
         this.itemSelectListener = itemSelectListener;
     }
 
@@ -76,6 +76,10 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
     public void clearIssues() {
         this.issues.clear();
         notifyDataSetChanged();
+    }
+
+    public interface OnIssueItemSelectListener {
+        void onSelect(@NonNull Issue issue);
     }
 
     public final static class ViewHolder extends RecyclerView.ViewHolder {
