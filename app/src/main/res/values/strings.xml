@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">MercuryInternShipTask3.GithubIssues</string>
+    <string name="app_name">GithubIssues</string>
+
+    <string name="empty_issue_list_fragment">No opened Issues</string>
 </resources>
