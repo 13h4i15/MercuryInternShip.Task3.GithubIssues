@@ -16,6 +16,9 @@ public final class Issue implements Parcelable {
     @SerializedName("number")
     private final Integer number;
 
+    @SerializedName("state")
+    private final String state;
+
     @SerializedName("title")
     private final String title;
 
@@ -25,10 +28,11 @@ public final class Issue implements Parcelable {
     @SerializedName("user")
     private final User user;
 
-    public Issue(@NonNull String id, @NonNull Integer number, @NonNull String title,
-                 @NonNull String body, @NonNull User user) {
+    public Issue(@NonNull String id, @NonNull Integer number, @NonNull String state
+            , @NonNull String title, @NonNull String body, @NonNull User user) {
         this.id = id;
         this.number = number;
+        this.state = state;
         this.title = title;
         this.body = body;
         this.user = user;
@@ -47,6 +51,10 @@ public final class Issue implements Parcelable {
     @NonNull
     public String getBody() {
         return body;
+    }
+
+    public String getState() {
+        return state;
     }
 
     @NonNull
@@ -68,6 +76,7 @@ public final class Issue implements Parcelable {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeString(id);
         dest.writeString(title);
+        dest.writeString(state);
         dest.writeString(body);
         dest.writeInt(number);
         dest.writeParcelable(user, flags);
@@ -77,7 +86,7 @@ public final class Issue implements Parcelable {
             = new Parcelable.Creator<Issue>() {
         @NonNull
         public Issue createFromParcel(@NonNull Parcel in) {
-            return new Issue(in.readString(), in.readInt(), in.readString(), in.readString(),
+            return new Issue(in.readString(), in.readInt(), in.readString(), in.readString(), in.readString(),
                     in.readParcelable(User.class.getClassLoader()));
         }
 
@@ -94,6 +103,7 @@ public final class Issue implements Parcelable {
         Issue issue = (Issue) o;
         return getId().equals(issue.getId()) &&
                 getNumber().equals(issue.getNumber()) &&
+                getState().equals(issue.getState()) &&
                 getTitle().equals(issue.getTitle()) &&
                 getBody().equals(issue.getBody()) &&
                 getUser().equals(issue.getUser());
@@ -101,6 +111,6 @@ public final class Issue implements Parcelable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getNumber(), getTitle(), getBody(), getUser());
+        return Objects.hash(getId(), getNumber(), getState(), getTitle(), getBody(), getUser());
     }
 }

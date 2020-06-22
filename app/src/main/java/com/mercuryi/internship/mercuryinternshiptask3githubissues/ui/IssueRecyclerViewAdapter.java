@@ -77,11 +77,6 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         this.issues.addAll(issues);
     }
 
-    public void clearIssues() {
-        this.issues.clear();
-        notifyDataSetChanged();
-    }
-
     public interface OnIssueItemSelectListener {
         void onSelect(@NonNull Issue issue);
     }

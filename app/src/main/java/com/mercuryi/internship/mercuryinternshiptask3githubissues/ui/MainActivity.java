@@ -7,9 +7,12 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -71,6 +74,27 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_state_selection, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_all_issues:
+                viewModel.selectState(GithubApi.IssueState.STATE_ALL);
+                break;
+            case R.id.action_open_issues:
+                viewModel.selectState(GithubApi.IssueState.STATE_OPEN);
+                break;
+            case R.id.action_closed_issues:
+                viewModel.selectState(GithubApi.IssueState.STATE_CLOSED);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();

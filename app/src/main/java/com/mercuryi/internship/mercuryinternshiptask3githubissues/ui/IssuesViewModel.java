@@ -17,11 +17,9 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -34,18 +32,31 @@ public final class IssuesViewModel extends AndroidViewModel {
 
     private final BehaviorSubject<Optional<Issue>> selectedIssueSubject
             = BehaviorSubject.createDefault(Optional.empty());
-    private final BehaviorSubject<List<Issue>> issuesSubject = BehaviorSubject.createDefault(new ArrayList<>());
+    private final BehaviorSubject<GithubApi.IssueState> selectedIssuesStateSubject
+            = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_OPEN);
+    private final BehaviorSubject<List<Issue>> issuesSubject
+            = BehaviorSubject.createDefault(new ArrayList<>());
+
     private final GithubApi api = AppNetworkService.getGithubApi();
     private final IssueDAO dao;
-    private Disposable webDisposable;
+    private final AppDatabase database;
+
+    private Disposable webDisposable, selectedStateDisposable;
     private io.reactivex.disposables.Disposable databaseDisposable;
     private int nextPage;
 
     public IssuesViewModel(@NonNull Application application) {
         super(application);
-        dao = AppDatabase.getInstance(application.getApplicationContext()).issueDAO();
+        database = AppDatabase.getInstance(application.getApplicationContext());
+        dao = database.issueDAO();
         obtainIssuesFromDB();
-        reloadIssues();
+        loadNewIssues();
+        selectedStateDisposable = selectedIssuesStateSubject
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(state -> {
+                    reloadIssues();
+                });
     }
 
     @Override
@@ -55,6 +66,9 @@ public final class IssuesViewModel extends AndroidViewModel {
         }
         if (databaseDisposable != null && !databaseDisposable.isDisposed()) {
             databaseDisposable.dispose();
+        }
+        if (selectedStateDisposable != null && !selectedStateDisposable.isDisposed()) {
+            selectedStateDisposable.dispose();
         }
         super.onCleared();
     }
@@ -85,21 +99,28 @@ public final class IssuesViewModel extends AndroidViewModel {
         return nextPage - 1;
     }
 
+    public void selectState(@NonNull GithubApi.IssueState state) {
+        if (!state.equals(selectedIssuesStateSubject.getValue())) {
+            selectedIssuesStateSubject.onNext(state);
+        }
+    }
+
     private void loadIssueList(int page) {
         if (webDisposable != null && !webDisposable.isDisposed()) return;
         webDisposable = api.getProjectIssues(
-                userName, projectName, GithubApi.STATE_OPEN, page)
+                userName, projectName, selectedIssuesStateSubject.getValue().getState(), page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(issues -> {
                     if (!issues.isEmpty()) {
                         if (page == 1) {
                             selectedIssueSubject.onNext(Optional.empty());
+                            database.clearAllTables();
                         }
                         dao.insertIssues(issues);
-                        nextPage = page + 1;
                     }
                 }, error -> {
+                    issuesSubject.onError(error);
                     Log.e(LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
@@ -114,7 +135,10 @@ public final class IssuesViewModel extends AndroidViewModel {
                         issues.addAll(PojoConverter.userWithIssuesToList(user));
                     }
                     Collections.sort(issues, (issue1, issue2) -> issue2.getNumber() - issue1.getNumber());
+                    nextPage = (issues.size()) / GithubApi.ISSUES_ON_PAGE + 1;
                     issuesSubject.onNext(issues);
+                }, error -> {
+                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
 }

@@ -14,7 +14,7 @@ public class PojoConverter {
     @TypeConverter
     @NonNull
     public static IssuePojo issueToPojo(@NonNull Issue issue) {
-        return new IssuePojo(issue.getId(), issue.getNumber(), issue.getTitle(),
+        return new IssuePojo(issue.getId(), issue.getNumber(), issue.getState(), issue.getTitle(),
                 issue.getBody(), issue.getUser().getLogin());
     }
 
@@ -37,8 +37,8 @@ public class PojoConverter {
         User user = pojoToUser(userWithIssues.getUser());
         if (userWithIssues.getIssues() != null) {
             for (IssuePojo issuePojo : userWithIssues.getIssues()) {
-                issues.add(new Issue(issuePojo.getId(), issuePojo.getNumber(), issuePojo.getTitle(),
-                        issuePojo.getBody(), user));
+                issues.add(new Issue(issuePojo.getId(), issuePojo.getNumber(), issuePojo.getState(),
+                        issuePojo.getTitle(), issuePojo.getBody(), user));
             }
         }
         return issues;

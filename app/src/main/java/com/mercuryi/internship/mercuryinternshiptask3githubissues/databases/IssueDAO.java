@@ -1,5 +1,6 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.databases;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;

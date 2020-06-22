@@ -16,6 +16,9 @@ public class IssuePojo {
     @ColumnInfo(name = "number")
     private final Integer number;
 
+    @ColumnInfo(name = "state")
+    private final String state;
+
     @ColumnInfo(name = "title")
     private final String title;
 
@@ -25,10 +28,11 @@ public class IssuePojo {
     @ColumnInfo(name = "user_login")
     private final String userLogin;
 
-    public IssuePojo(@NonNull String id, @NonNull Integer number, @NonNull String title,
-                     @NonNull String body, @NonNull String userLogin) {
+    public IssuePojo(@NonNull String id, @NonNull Integer number, @NonNull String state,
+                     @NonNull String title, @NonNull String body, @NonNull String userLogin) {
         this.id = id;
         this.number = number;
+        this.state = state;
         this.title = title;
         this.body = body;
         this.userLogin = userLogin;
@@ -47,6 +51,10 @@ public class IssuePojo {
     @NonNull
     public String getTitle() {
         return title;
+    }
+
+    public String getState() {
+        return state;
     }
 
     @NonNull

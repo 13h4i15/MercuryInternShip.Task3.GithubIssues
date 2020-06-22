@@ -1,5 +1,7 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.web;
 
+import androidx.annotation.NonNull;
+
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
 import java.util.List;
@@ -11,9 +13,28 @@ import retrofit2.http.Query;
 
 
 public interface GithubApi {
-    String STATE_OPEN = "open";
+    int ISSUES_ON_PAGE = 30;
 
     @GET("/repos/{user}/{project}/issues")
-    Single<List<Issue>> getProjectIssues(@Path("user") String userName, @Path("project") String projectName,
-                                         @Query("state") String state, @Query("page") int page);
+    Single<List<Issue>> getProjectIssues(@Path("user") @NonNull String userName,
+                                         @Path("project") @NonNull String projectName,
+                                         @Query("state") @NonNull String state,
+                                         @Query("page") int page);
+
+    enum IssueState {
+        STATE_OPEN("open"),
+        STATE_CLOSED("closed"),
+        STATE_ALL("all");
+
+        private String state;
+
+        IssueState(@NonNull String state) {
+            this.state = state;
+        }
+
+        @NonNull
+        public String getState() {
+            return state;
+        }
+    }
 }

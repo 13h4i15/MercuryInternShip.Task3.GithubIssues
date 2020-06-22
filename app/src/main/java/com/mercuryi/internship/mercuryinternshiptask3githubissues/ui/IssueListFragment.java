@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,9 +26,12 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class IssueListFragment extends Fragment {
+    private final static String RECYCLER_STATE_EXTRA = "recycler_state";
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
 
     private Disposable issuesDisposable, selectedIssueDisposable;
+    private RecyclerView recyclerView;
+    private Parcelable recyclerState;
 
     public static IssueListFragment newInstance() {
         return new IssueListFragment();
@@ -45,16 +49,20 @@ public class IssueListFragment extends Fragment {
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
 
-        RecyclerView recyclerView = root.findViewById(R.id.list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView = root.findViewById(R.id.list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         IssueRecyclerViewAdapter adapter = new IssueRecyclerViewAdapter();
         recyclerView.addItemDecoration(new VerticalSpaceItemDecoration());
         recyclerView.setAdapter(adapter);
         adapter.setOnItemSelectListener(viewModel::setSelectedIssue);
 
+        recyclerState = savedInstanceState != null ?
+                savedInstanceState.getParcelable(RECYCLER_STATE_EXTRA) : null;
+
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
-        SwipeRefreshLayout.OnRefreshListener refreshListener = viewModel::reloadIssues;
+        SwipeRefreshLayout.OnRefreshListener refreshListener = () -> viewModel.reloadIssues();
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
+        swipeRefreshLayout.setRefreshing(true);
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
         issuesDisposable = viewModel.getIssuesObservable()
@@ -66,6 +74,10 @@ public class IssueListFragment extends Fragment {
                     adapter.setIssues(issues);
                     diffResult.dispatchUpdatesTo(adapter);
                     swipeRefreshLayout.setRefreshing(false);
+                    if (recyclerState != null && recyclerView.getLayoutManager() != null) {
+                        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
+                        recyclerState = null;
+                    }
                     if (adapter.getItemCount() != 0) {
                         recyclerView.setVisibility(View.VISIBLE);
                         emptyListMessageView.setVisibility(View.GONE);
@@ -103,5 +115,13 @@ public class IssueListFragment extends Fragment {
             selectedIssueDisposable.dispose();
         }
         super.onDestroyView();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        if (recyclerView != null && recyclerView.getLayoutManager() != null) {
+            outState.putParcelable(RECYCLER_STATE_EXTRA, recyclerView.getLayoutManager().onSaveInstanceState());
+        }
+        super.onSaveInstanceState(outState);
     }
 }
