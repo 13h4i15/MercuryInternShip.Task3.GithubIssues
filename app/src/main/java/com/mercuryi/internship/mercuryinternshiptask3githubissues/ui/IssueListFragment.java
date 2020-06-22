@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -17,8 +18,11 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class IssueListFragment extends Fragment {
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
@@ -53,27 +57,33 @@ public class IssueListFragment extends Fragment {
         swipeRefreshLayout.setOnRefreshListener(refreshListener);
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
-        issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
-            swipeRefreshLayout.setRefreshing(false);
-            if (!issues.isEmpty()) {
-                if (viewModel.getCurrentPage() == 1) {
-                    adapter.clearIssues();
-                }
-                recyclerView.setVisibility(View.VISIBLE);
-                emptyListMessageView.setVisibility(View.GONE);
-                adapter.addToIssues(issues);
-            } else if (adapter.getItemCount() == 0) {
-                recyclerView.setVisibility(View.GONE);
-                emptyListMessageView.setVisibility(View.VISIBLE);
-            }
-        }, error -> {
-            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
-            swipeRefreshLayout.setRefreshing(false);
-        });
+        issuesDisposable = viewModel.getIssuesObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(issues -> {
+                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues);
+                    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
+                    adapter.setIssues(issues);
+                    diffResult.dispatchUpdatesTo(adapter);
+                    swipeRefreshLayout.setRefreshing(false);
+                    if (adapter.getItemCount() != 0) {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        emptyListMessageView.setVisibility(View.GONE);
+                    } else {
+                        recyclerView.setVisibility(View.GONE);
+                        emptyListMessageView.setVisibility(View.VISIBLE);
+                    }
+                }, error -> {
+                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+                    swipeRefreshLayout.setRefreshing(false);
+                });
 
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
-            adapter.setSelectedIssue(selectedIssue.orElse(null));
-        });
+        selectedIssueDisposable = viewModel.getSelectedIssueObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(selectedIssue -> {
+                    adapter.setSelectedIssue(selectedIssue.orElse(null));
+                });
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override

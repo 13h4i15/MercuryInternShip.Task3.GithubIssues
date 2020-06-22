@@ -11,7 +11,9 @@ import android.os.Bundle;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private Disposable issuesDisposable, selectedIssueDisposable;
@@ -31,18 +33,24 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
 
-        issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
-            if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
-                getSupportFragmentManager().popBackStack();
-            }
-        });
+        issuesDisposable = viewModel.getIssuesObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(issues -> {
+                    if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
+                        getSupportFragmentManager().popBackStack();
+                    }
+                });
 
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
-            selectedIssue.ifPresent(issue -> {
-                setToolbarNavigationVisibility(true);
-                createIssueFragment(issue);
-            });
-        });
+        selectedIssueDisposable = viewModel.getSelectedIssueObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(selectedIssue -> {
+                    selectedIssue.ifPresent(issue -> {
+                        setToolbarNavigationVisibility(true);
+                        createIssueFragment(issue);
+                    });
+                });
     }
 
     @Override

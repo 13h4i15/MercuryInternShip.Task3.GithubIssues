@@ -50,6 +50,10 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         return issues.size();
     }
 
+    public List<Issue> getIssues() {
+        return issues;
+    }
+
     private static void loadUserAvatar(@NonNull String imageUrl, @NonNull ImageView imageView) {
         Picasso.get()
                 .load(imageUrl)
@@ -68,9 +72,9 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
         notifyDataSetChanged();
     }
 
-    public void addToIssues(@NonNull List<Issue> issueList) {
-        this.issues.addAll(issueList);
-        notifyDataSetChanged();
+    public void setIssues(@NonNull List<Issue> issues) {
+        this.issues.clear();
+        this.issues.addAll(issues);
     }
 
     public void clearIssues() {
