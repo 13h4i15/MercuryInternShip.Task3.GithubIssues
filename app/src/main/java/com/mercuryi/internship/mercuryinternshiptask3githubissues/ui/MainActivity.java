@@ -15,6 +15,8 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
+import java.util.Optional;
+
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -49,11 +51,11 @@ public class MainActivity extends AppCompatActivity {
         selectedIssueDisposable = viewModel.getSelectedIssueObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(selectedIssue -> {
-                    selectedIssue.ifPresent(issue -> {
-                        setToolbarNavigationVisibility(true);
-                        createIssueFragment(issue);
-                    });
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .subscribe(issue -> {
+                    setToolbarNavigationVisibility(true);
+                    createIssueFragment(issue);
                 }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });

@@ -101,14 +101,13 @@ public final class IssuesViewModel extends AndroidViewModel {
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .filter(issues -> !issues.isEmpty())
                 .subscribe(issues -> {
-                    if (!issues.isEmpty()) {
-                        if (page == 1) {
-                            database.clearAllTables();
-                        }
-                        dao.insertIssues(issues);
-                        loadIssues(page + 1);
+                    if (page == 1) {
+                        database.clearAllTables();
                     }
+                    dao.insertIssues(issues);
+                    loadIssues(page + 1);
                 }, error -> {
                     refreshingSubject.onNext(false);
                     Toast.makeText(getApplication().getApplicationContext(),
@@ -129,11 +128,8 @@ public final class IssuesViewModel extends AndroidViewModel {
         databaseDisposable = flowable
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
-                .subscribe(issuesWithUser -> {
-                    List<Issue> issues = new ArrayList<>();
-                    for (IssueWithUser issue : issuesWithUser) {
-                        issues.add(PojoConverter.issueWithUserToIssue(issue));
-                    }
+                .map(PojoConverter::issueWithUserToIssue)
+                .subscribe(issues -> {
                     issuesSubject.onNext(Optional.of(issues));
                     refreshingSubject.onNext(false);
                 }, error -> {

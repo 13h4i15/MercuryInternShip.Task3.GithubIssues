@@ -6,6 +6,9 @@ import androidx.room.TypeConverter;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.User;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PojoConverter {
     @TypeConverter
     @NonNull
@@ -33,5 +36,15 @@ public class PojoConverter {
         IssuePojo issuePojo = issueWithUser.getIssue();
         return new Issue(issuePojo.getId(), issuePojo.getNumber(), issuePojo.getState(),
                 issuePojo.getTitle(), issuePojo.getBody(), user);
+    }
+
+    @TypeConverter
+    @NonNull
+    public static List<Issue> issueWithUserToIssue(@NonNull List<IssueWithUser> issuesWithUser) {
+        List<Issue> issues = new ArrayList<>();
+        for (IssueWithUser issue : issuesWithUser) {
+            issues.add(issueWithUserToIssue(issue));
+        }
+        return issues;
     }
 }

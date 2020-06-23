@@ -27,6 +27,7 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -79,26 +80,24 @@ public class IssueListFragment extends Fragment {
         issuesDisposable = viewModel.getIssuesObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .filter(Optional::isPresent)
                 .subscribe(issues -> {
-                    if (issues.isPresent()) {
-                        IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues.get());
-                        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
-                        adapter.setIssues(issues.get());
-                        diffResult.dispatchUpdatesTo(adapter);
-                        workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
-                        startWork();
-
-                        if (adapter.getItemCount() != 0) {
-                            if (recyclerState != null && recyclerView.getLayoutManager() != null) {
-                                recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
-                                recyclerState = null;
-                            }
-                            recyclerView.setVisibility(View.VISIBLE);
-                            emptyListMessageView.setVisibility(View.GONE);
-                        } else {
-                            recyclerView.setVisibility(View.GONE);
-                            emptyListMessageView.setVisibility(View.VISIBLE);
+                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues.get());
+                    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
+                    adapter.setIssues(issues.get());
+                    diffResult.dispatchUpdatesTo(adapter);
+                    workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
+                    startWork();
+                    if (adapter.getItemCount() != 0) {
+                        if (recyclerState != null && recyclerView.getLayoutManager() != null) {
+                            recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
+                            recyclerState = null;
                         }
+                        recyclerView.setVisibility(View.VISIBLE);
+                        emptyListMessageView.setVisibility(View.GONE);
+                    } else {
+                        recyclerView.setVisibility(View.GONE);
+                        emptyListMessageView.setVisibility(View.VISIBLE);
                     }
                 }, error -> {
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
