@@ -19,11 +19,11 @@ public abstract class IssueDAO {
     public abstract Flowable<List<IssueWithUser>> getAllIssues();
 
     @Transaction
-    @Query("SELECT * FROM ISSUE WHERE STATE = 'OPEN' ORDER BY NUMBER DESC;")
+    @Query("SELECT * FROM ISSUE WHERE STATE = 'open' ORDER BY NUMBER DESC;")
     public abstract Flowable<List<IssueWithUser>> getOpenIssues();
 
     @Transaction
-    @Query("SELECT * FROM ISSUE WHERE STATE = 'CLOSED' ORDER BY NUMBER DESC;")
+    @Query("SELECT * FROM ISSUE WHERE STATE = 'closed' ORDER BY NUMBER DESC;")
     public abstract Flowable<List<IssueWithUser>> getClosedIssues();
 
 

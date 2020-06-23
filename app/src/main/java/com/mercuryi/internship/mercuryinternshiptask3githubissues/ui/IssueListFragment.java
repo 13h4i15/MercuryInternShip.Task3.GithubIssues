@@ -36,7 +36,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class IssueListFragment extends Fragment {
     private final static String RECYCLER_STATE_EXTRA = "recycler_state";
 
-    private Disposable issuesDisposable, selectedIssueDisposable;
+    private Disposable issuesDisposable, selectedIssueDisposable, refreshingDisposable;
     private RecyclerView recyclerView;
     private Parcelable recyclerState;
 
@@ -69,37 +69,39 @@ public class IssueListFragment extends Fragment {
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
         swipeRefreshLayout.setOnRefreshListener(viewModel::reloadIssues);
-        swipeRefreshLayout.setRefreshing(true);
+
+        refreshingDisposable = viewModel.getRefreshingObservable()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(swipeRefreshLayout::setRefreshing);
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
         issuesDisposable = viewModel.getIssuesObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(issues -> {
-                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues);
-                    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
-                    adapter.setIssues(issues);
-                    diffResult.dispatchUpdatesTo(adapter);
+                    if (issues.isPresent()) {
+                        IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues.get());
+                        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
+                        adapter.setIssues(issues.get());
+                        diffResult.dispatchUpdatesTo(adapter);
+                        workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
+                        startWork();
 
-                    swipeRefreshLayout.setRefreshing(false);
-
-                    workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
-                    startWork();
-
-                    if (recyclerState != null && recyclerView.getLayoutManager() != null) {
-                        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
-                        recyclerState = null;
-                    }
-                    if (adapter.getItemCount() != 0) {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        emptyListMessageView.setVisibility(View.GONE);
-                    } else {
-                        recyclerView.setVisibility(View.GONE);
-                        emptyListMessageView.setVisibility(View.VISIBLE);
+                        if (adapter.getItemCount() != 0) {
+                            if (recyclerState != null && recyclerView.getLayoutManager() != null) {
+                                recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
+                                recyclerState = null;
+                            }
+                            recyclerView.setVisibility(View.VISIBLE);
+                            emptyListMessageView.setVisibility(View.GONE);
+                        } else {
+                            recyclerView.setVisibility(View.GONE);
+                            emptyListMessageView.setVisibility(View.VISIBLE);
+                        }
                     }
                 }, error -> {
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
-                    swipeRefreshLayout.setRefreshing(false);
                 });
 
         selectedIssueDisposable = viewModel.getSelectedIssueObservable()
@@ -114,12 +116,9 @@ public class IssueListFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
-            issuesDisposable.dispose();
-        }
-        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
-            selectedIssueDisposable.dispose();
-        }
+        dispose(issuesDisposable);
+        dispose(selectedIssueDisposable);
+        dispose(refreshingDisposable);
         super.onDestroyView();
     }
 
@@ -129,6 +128,12 @@ public class IssueListFragment extends Fragment {
             outState.putParcelable(RECYCLER_STATE_EXTRA, recyclerView.getLayoutManager().onSaveInstanceState());
         }
         super.onSaveInstanceState(outState);
+    }
+
+    private void dispose(Disposable disposable) {
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
+        }
     }
 
     private void startWork() {

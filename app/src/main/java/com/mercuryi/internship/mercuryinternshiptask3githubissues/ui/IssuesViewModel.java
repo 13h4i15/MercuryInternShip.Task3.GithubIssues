@@ -2,6 +2,7 @@ package com.mercuryi.internship.mercuryinternshiptask3githubissues.ui;
 
 import android.app.Application;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import io.reactivex.Flowable;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -29,9 +31,11 @@ public final class IssuesViewModel extends AndroidViewModel {
     private final BehaviorSubject<Optional<Issue>> selectedIssueSubject
             = BehaviorSubject.createDefault(Optional.empty());
     private final BehaviorSubject<GithubApi.IssueState> selectedIssuesStateSubject
-            = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_OPEN);
-    private final BehaviorSubject<List<Issue>> issuesSubject
-            = BehaviorSubject.createDefault(new ArrayList<>());
+            = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_ALL);
+    private final BehaviorSubject<Optional<List<Issue>>> issuesSubject
+            = BehaviorSubject.createDefault(Optional.empty());
+    private final BehaviorSubject<Boolean> refreshingSubject
+            = BehaviorSubject.createDefault(true);
 
     private final GithubApi api = AppNetworkService.getGithubApi();
     private final AppDatabase database;
@@ -50,7 +54,6 @@ public final class IssuesViewModel extends AndroidViewModel {
                 .subscribe(this::obtainIssuesFromDB, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });
-        reloadIssues();
     }
 
     @Override
@@ -65,13 +68,18 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     @NonNull
-    public Observable<List<Issue>> getIssuesObservable() {
+    public Observable<Optional<List<Issue>>> getIssuesObservable() {
         return issuesSubject;
     }
 
     @NonNull
     public Observable<Optional<Issue>> getSelectedIssueObservable() {
         return selectedIssueSubject;
+    }
+
+    @NonNull
+    public Observable<Boolean> getRefreshingObservable() {
+        return refreshingSubject;
     }
 
     public void setState(@NonNull GithubApi.IssueState state) {
@@ -85,11 +93,14 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     private void loadIssues(int page) {
+        if (page == 1) {
+            refreshingSubject.onNext(true);
+        }
         dispose(webDisposable);
         webDisposable = api.getProjectIssues(
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(issues -> {
                     if (!issues.isEmpty()) {
                         if (page == 1) {
@@ -99,12 +110,13 @@ public final class IssuesViewModel extends AndroidViewModel {
                         loadIssues(page + 1);
                     }
                 }, error -> {
-                    issuesSubject.onError(new Throwable(error));
-                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
+                    refreshingSubject.onNext(false);
+                    Toast.makeText(getApplication().getApplicationContext(),
+                            error.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void obtainIssuesFromDB(GithubApi.IssueState state) {
+    private void obtainIssuesFromDB(@NonNull GithubApi.IssueState state) {
         dispose(databaseDisposable);
         Flowable<List<IssueWithUser>> flowable;
         if (state.equals(GithubApi.IssueState.STATE_OPEN)) {
@@ -122,9 +134,11 @@ public final class IssuesViewModel extends AndroidViewModel {
                     for (IssueWithUser issue : issuesWithUser) {
                         issues.add(PojoConverter.issueWithUserToIssue(issue));
                     }
-                    issuesSubject.onNext(issues);
+                    issuesSubject.onNext(Optional.of(issues));
+                    refreshingSubject.onNext(false);
                 }, error -> {
-                    issuesSubject.onError(new Throwable(error));
+                    refreshingSubject.onNext(false);
+                    issuesSubject.onNext(Optional.of(new ArrayList<>()));
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }

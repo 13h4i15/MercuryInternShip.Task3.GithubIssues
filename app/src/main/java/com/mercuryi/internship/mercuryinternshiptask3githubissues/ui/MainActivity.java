@@ -41,9 +41,7 @@ public class MainActivity extends AppCompatActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(issues -> {
-                    if (!issues.isEmpty()) {
-                        getSupportFragmentManager().popBackStack();
-                    }
+                    getSupportFragmentManager().popBackStack();
                 }, error -> {
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
