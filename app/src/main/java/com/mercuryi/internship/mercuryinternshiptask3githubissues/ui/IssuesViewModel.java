@@ -26,9 +26,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 
 public final class IssuesViewModel extends AndroidViewModel {
-    private final static String LOADING_ERROR_LOG_TAG = "loading_error";
-    private final static String userName = "alibaba";
-    private final static String projectName = "atlas";
 
     private final BehaviorSubject<Optional<Issue>> selectedIssueSubject
             = BehaviorSubject.createDefault(Optional.empty());
@@ -36,12 +33,11 @@ public final class IssuesViewModel extends AndroidViewModel {
             = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_OPEN);
     private final BehaviorSubject<List<Issue>> issuesSubject
             = BehaviorSubject.createDefault(new ArrayList<>());
-
     private final GithubApi api = AppNetworkService.getGithubApi();
-    private final IssueDAO dao;
+    private final List<Issue> issues = new ArrayList<>();
     private final AppDatabase database;
-
-    private Disposable webDisposable, selectedStateDisposable;
+    private final IssueDAO dao;
+    private Disposable webDisposable;
     private io.reactivex.disposables.Disposable databaseDisposable;
     private int nextPage;
 
@@ -50,39 +46,18 @@ public final class IssuesViewModel extends AndroidViewModel {
         database = AppDatabase.getInstance(application.getApplicationContext());
         dao = database.issueDAO();
         obtainIssuesFromDB();
-        loadNewIssues();
-        selectedStateDisposable = selectedIssuesStateSubject
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe(state -> {
-                    reloadIssues();
-                });
+        reloadIssues();
     }
 
     @Override
     protected void onCleared() {
-        if (webDisposable != null && !webDisposable.isDisposed()) {
-            webDisposable.dispose();
-        }
-        if (databaseDisposable != null && !databaseDisposable.isDisposed()) {
-            databaseDisposable.dispose();
-        }
-        if (selectedStateDisposable != null && !selectedStateDisposable.isDisposed()) {
-            selectedStateDisposable.dispose();
-        }
+        dispose();
         super.onCleared();
     }
 
-    public void reloadIssues() {
-        loadIssueList(1);
-    }
-
-    public void loadNewIssues() {
-        loadIssueList(nextPage);
-    }
-
     public void setSelectedIssue(@Nullable Issue issue) {
-        selectedIssueSubject.onNext(Optional.ofNullable(issue));
+        if (!selectedIssueSubject.getValue().isPresent() || !selectedIssueSubject.getValue().get().equals(issue))
+            selectedIssueSubject.onNext(Optional.ofNullable(issue));
     }
 
     @NonNull
@@ -99,33 +74,39 @@ public final class IssuesViewModel extends AndroidViewModel {
         return nextPage - 1;
     }
 
-    public void selectState(@NonNull GithubApi.IssueState state) {
+    public void setState(@NonNull GithubApi.IssueState state) {
         if (!state.equals(selectedIssuesStateSubject.getValue())) {
             selectedIssuesStateSubject.onNext(state);
         }
     }
 
-    private void loadIssueList(int page) {
+    public void reloadIssues() {
+        issues.clear();
+        loadIssues(1);
+    }
+
+    private void loadIssues(int page) {
         if (webDisposable != null && !webDisposable.isDisposed()) return;
         webDisposable = api.getProjectIssues(
-                userName, projectName, selectedIssuesStateSubject.getValue().getState(), page)
+                GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(issues -> {
                     if (!issues.isEmpty()) {
                         if (page == 1) {
-                            selectedIssueSubject.onNext(Optional.empty());
                             database.clearAllTables();
                         }
                         dao.insertIssues(issues);
+                        loadIssues(page + 1);
                     }
                 }, error -> {
                     issuesSubject.onError(error);
-                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
 
     private void obtainIssuesFromDB() {
+        dispose();
         databaseDisposable = dao.getAllIssues()
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
@@ -138,7 +119,17 @@ public final class IssuesViewModel extends AndroidViewModel {
                     nextPage = (issues.size()) / GithubApi.ISSUES_ON_PAGE + 1;
                     issuesSubject.onNext(issues);
                 }, error -> {
-                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+                    issuesSubject.onError(error);
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
+    }
+
+    private void dispose() {
+        if (databaseDisposable != null && !databaseDisposable.isDisposed()) {
+            databaseDisposable.dispose();
+        }
+        if (webDisposable != null && !webDisposable.isDisposed()) {
+            webDisposable.dispose();
+        }
     }
 }

@@ -13,6 +13,8 @@ import retrofit2.http.Query;
 
 
 public interface GithubApi {
+    String USERNAME = "alibaba";
+    String PROJECT_NAME = "atlas";
     int ISSUES_ON_PAGE = 30;
 
     @GET("/repos/{user}/{project}/issues")

@@ -10,6 +10,11 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import android.os.Parcelable;
 import android.util.Log;
@@ -20,6 +25,9 @@ import android.widget.TextView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
+
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -27,7 +35,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class IssueListFragment extends Fragment {
     private final static String RECYCLER_STATE_EXTRA = "recycler_state";
-    private final static String LOADING_ERROR_LOG_TAG = "loading_error";
 
     private Disposable issuesDisposable, selectedIssueDisposable;
     private RecyclerView recyclerView;
@@ -48,6 +55,7 @@ public class IssueListFragment extends Fragment {
         super.onViewCreated(root, savedInstanceState);
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
+        WorkManager workManager = WorkManager.getInstance(requireContext().getApplicationContext());
 
         recyclerView = root.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -60,8 +68,7 @@ public class IssueListFragment extends Fragment {
                 savedInstanceState.getParcelable(RECYCLER_STATE_EXTRA) : null;
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
-        SwipeRefreshLayout.OnRefreshListener refreshListener = () -> viewModel.reloadIssues();
-        swipeRefreshLayout.setOnRefreshListener(refreshListener);
+        swipeRefreshLayout.setOnRefreshListener(viewModel::reloadIssues);
         swipeRefreshLayout.setRefreshing(true);
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
@@ -73,7 +80,12 @@ public class IssueListFragment extends Fragment {
                     DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
                     adapter.setIssues(issues);
                     diffResult.dispatchUpdatesTo(adapter);
+
                     swipeRefreshLayout.setRefreshing(false);
+
+                    workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
+                    startWork();
+
                     if (recyclerState != null && recyclerView.getLayoutManager() != null) {
                         recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
                         recyclerState = null;
@@ -86,7 +98,7 @@ public class IssueListFragment extends Fragment {
                         emptyListMessageView.setVisibility(View.VISIBLE);
                     }
                 }, error -> {
-                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                     swipeRefreshLayout.setRefreshing(false);
                 });
 
@@ -96,14 +108,6 @@ public class IssueListFragment extends Fragment {
                 .subscribe(selectedIssue -> {
                     adapter.setSelectedIssue(selectedIssue.orElse(null));
                 });
-
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                if (!recyclerView.canScrollVertically(1)) viewModel.loadNewIssues();
-            }
-        });
     }
 
     @Override
@@ -123,5 +127,17 @@ public class IssueListFragment extends Fragment {
             outState.putParcelable(RECYCLER_STATE_EXTRA, recyclerView.getLayoutManager().onSaveInstanceState());
         }
         super.onSaveInstanceState(outState);
+    }
+
+    private void startWork() {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                IssueWorker.class, 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)
+                .setConstraints(constraints)
+                .build();
+        WorkManager.getInstance(requireContext().getApplicationContext()).enqueueUniquePeriodicWork(
+                IssueWorker.ISSUE_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest);
     }
 }

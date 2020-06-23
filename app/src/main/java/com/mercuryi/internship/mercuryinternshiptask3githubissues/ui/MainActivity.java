@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -19,6 +20,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
+
     private Disposable issuesDisposable, selectedIssueDisposable;
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
@@ -43,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
                     if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
                         getSupportFragmentManager().popBackStack();
                     }
+                }, error -> {
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
 
         selectedIssueDisposable = viewModel.getSelectedIssueObservable()
@@ -84,13 +88,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_all_issues:
-                viewModel.selectState(GithubApi.IssueState.STATE_ALL);
+                viewModel.setState(GithubApi.IssueState.STATE_ALL);
                 break;
             case R.id.action_open_issues:
-                viewModel.selectState(GithubApi.IssueState.STATE_OPEN);
+                viewModel.setState(GithubApi.IssueState.STATE_OPEN);
                 break;
             case R.id.action_closed_issues:
-                viewModel.selectState(GithubApi.IssueState.STATE_CLOSED);
+                viewModel.setState(GithubApi.IssueState.STATE_CLOSED);
                 break;
         }
         return super.onOptionsItemSelected(item);

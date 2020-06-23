@@ -42,6 +42,10 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-rxjava2:$room_version"
 
+    def work_version = "2.3.4"
+    implementation "androidx.work:work-runtime:$work_version"
+    implementation "androidx.work:work-rxjava2:$work_version"
+
     def picasso_version = "2.71828"
     implementation "com.squareup.picasso:picasso:$picasso_version"
     def retrofit2_version = "2.9.0"
