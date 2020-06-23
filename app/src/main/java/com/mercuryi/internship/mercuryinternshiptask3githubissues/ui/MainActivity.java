@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        viewModel.setSelectedIssue(null);
         switch (item.getItemId()) {
             case R.id.action_all_issues:
                 viewModel.setState(GithubApi.IssueState.STATE_ALL);
