@@ -13,6 +13,7 @@ public class UserPojo {
     private final String login;
 
     @ColumnInfo(name = "avatar_url")
+    @NonNull
     private final String avatarUrl;
 
     public UserPojo(@NonNull String login, @NonNull String avatarUrl) {

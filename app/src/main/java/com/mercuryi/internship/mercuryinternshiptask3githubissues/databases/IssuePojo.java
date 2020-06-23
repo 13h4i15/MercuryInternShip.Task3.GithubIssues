@@ -3,10 +3,15 @@ package com.mercuryi.internship.mercuryinternshiptask3githubissues.databases;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.PrimaryKey;
 
 
-@Entity(tableName = "issue")
+@Entity(tableName = "issue", foreignKeys = {@ForeignKey(
+        entity = UserPojo.class,
+        parentColumns = "login",
+        childColumns = "user_login"
+)})
 public class IssuePojo {
     @PrimaryKey
     @ColumnInfo(name = "id")
@@ -14,18 +19,23 @@ public class IssuePojo {
     private final String id;
 
     @ColumnInfo(name = "number")
+    @NonNull
     private final Integer number;
 
     @ColumnInfo(name = "state")
+    @NonNull
     private final String state;
 
     @ColumnInfo(name = "title")
+    @NonNull
     private final String title;
 
     @ColumnInfo(name = "body")
+    @NonNull
     private final String body;
 
     @ColumnInfo(name = "user_login")
+    @NonNull
     private final String userLogin;
 
     public IssuePojo(@NonNull String id, @NonNull Integer number, @NonNull String state,
@@ -53,6 +63,7 @@ public class IssuePojo {
         return title;
     }
 
+    @NonNull
     public String getState() {
         return state;
     }

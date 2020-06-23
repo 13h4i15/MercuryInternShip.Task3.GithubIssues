@@ -107,6 +107,8 @@ public class IssueListFragment extends Fragment {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(selectedIssue -> {
                     adapter.setSelectedIssue(selectedIssue.orElse(null));
+                }, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });
     }
 

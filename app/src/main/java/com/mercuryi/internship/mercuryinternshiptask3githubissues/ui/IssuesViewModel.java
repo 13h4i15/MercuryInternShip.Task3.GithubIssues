@@ -9,43 +9,47 @@ import androidx.lifecycle.AndroidViewModel;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.AppDatabase;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueDAO;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueWithUser;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.PojoConverter;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.UserWithIssues;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import io.reactivex.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 
 public final class IssuesViewModel extends AndroidViewModel {
-
     private final BehaviorSubject<Optional<Issue>> selectedIssueSubject
             = BehaviorSubject.createDefault(Optional.empty());
     private final BehaviorSubject<GithubApi.IssueState> selectedIssuesStateSubject
             = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_OPEN);
     private final BehaviorSubject<List<Issue>> issuesSubject
             = BehaviorSubject.createDefault(new ArrayList<>());
+
     private final GithubApi api = AppNetworkService.getGithubApi();
-    private final List<Issue> issues = new ArrayList<>();
     private final AppDatabase database;
     private final IssueDAO dao;
+    private final Disposable selectStateDisposable;
     private Disposable webDisposable;
     private io.reactivex.disposables.Disposable databaseDisposable;
-    private int nextPage;
 
     public IssuesViewModel(@NonNull Application application) {
         super(application);
         database = AppDatabase.getInstance(application.getApplicationContext());
         dao = database.issueDAO();
-        obtainIssuesFromDB();
+        selectStateDisposable = selectedIssuesStateSubject
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(this::obtainIssuesFromDB, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
+                });
         reloadIssues();
     }
 
@@ -70,10 +74,6 @@ public final class IssuesViewModel extends AndroidViewModel {
         return selectedIssueSubject;
     }
 
-    public int getCurrentPage() {
-        return nextPage - 1;
-    }
-
     public void setState(@NonNull GithubApi.IssueState state) {
         if (!state.equals(selectedIssuesStateSubject.getValue())) {
             selectedIssuesStateSubject.onNext(state);
@@ -81,12 +81,11 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     public void reloadIssues() {
-        issues.clear();
         loadIssues(1);
     }
 
     private void loadIssues(int page) {
-        if (webDisposable != null && !webDisposable.isDisposed()) return;
+        dispose(webDisposable);
         webDisposable = api.getProjectIssues(
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
@@ -100,36 +99,51 @@ public final class IssuesViewModel extends AndroidViewModel {
                         loadIssues(page + 1);
                     }
                 }, error -> {
-                    issuesSubject.onError(error);
+                    issuesSubject.onError(new Throwable(error));
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
 
-    private void obtainIssuesFromDB() {
-        dispose();
-        databaseDisposable = dao.getAllIssues()
+    private void obtainIssuesFromDB(GithubApi.IssueState state) {
+        dispose(databaseDisposable);
+        Flowable<List<IssueWithUser>> flowable;
+        if (state.equals(GithubApi.IssueState.STATE_OPEN)) {
+            flowable = dao.getOpenIssues();
+        } else if (state.equals(GithubApi.IssueState.STATE_CLOSED)) {
+            flowable = dao.getClosedIssues();
+        } else {
+            flowable = dao.getAllIssues();
+        }
+        databaseDisposable = flowable
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
-                .subscribe(usersWithIssues -> {
+                .subscribe(issuesWithUser -> {
                     List<Issue> issues = new ArrayList<>();
-                    for (UserWithIssues user : usersWithIssues) {
-                        issues.addAll(PojoConverter.userWithIssuesToList(user));
+                    for (IssueWithUser issue : issuesWithUser) {
+                        issues.add(PojoConverter.issueWithUserToIssue(issue));
                     }
-                    Collections.sort(issues, (issue1, issue2) -> issue2.getNumber() - issue1.getNumber());
-                    nextPage = (issues.size()) / GithubApi.ISSUES_ON_PAGE + 1;
                     issuesSubject.onNext(issues);
                 }, error -> {
-                    issuesSubject.onError(error);
+                    issuesSubject.onError(new Throwable(error));
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
 
     private void dispose() {
-        if (databaseDisposable != null && !databaseDisposable.isDisposed()) {
-            databaseDisposable.dispose();
+        dispose(databaseDisposable);
+        dispose(webDisposable);
+        dispose(selectStateDisposable);
+    }
+
+    private void dispose(Disposable disposable) {
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
         }
-        if (webDisposable != null && !webDisposable.isDisposed()) {
-            webDisposable.dispose();
+    }
+
+    private void dispose(io.reactivex.disposables.Disposable disposable) {
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
         }
     }
 }

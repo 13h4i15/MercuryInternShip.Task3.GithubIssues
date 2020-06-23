@@ -20,7 +20,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
-
     private Disposable issuesDisposable, selectedIssueDisposable;
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
@@ -42,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(issues -> {
-                    if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
+                    if (!issues.isEmpty()) {
                         getSupportFragmentManager().popBackStack();
                     }
                 }, error -> {
@@ -57,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
                         setToolbarNavigationVisibility(true);
                         createIssueFragment(issue);
                     });
+                }, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });
     }
 

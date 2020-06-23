@@ -1,6 +1,5 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.databases;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -16,8 +15,16 @@ import io.reactivex.Flowable;
 @Dao
 public abstract class IssueDAO {
     @Transaction
-    @Query("SELECT * FROM USER")
-    public abstract Flowable<List<UserWithIssues>> getAllIssues();
+    @Query("SELECT * FROM ISSUE ORDER BY NUMBER DESC;")
+    public abstract Flowable<List<IssueWithUser>> getAllIssues();
+
+    @Transaction
+    @Query("SELECT * FROM ISSUE WHERE STATE = 'OPEN' ORDER BY NUMBER DESC;")
+    public abstract Flowable<List<IssueWithUser>> getOpenIssues();
+
+    @Transaction
+    @Query("SELECT * FROM ISSUE WHERE STATE = 'CLOSED' ORDER BY NUMBER DESC;")
+    public abstract Flowable<List<IssueWithUser>> getClosedIssues();
 
 
     @Transaction

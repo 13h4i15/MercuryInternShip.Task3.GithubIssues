@@ -62,7 +62,6 @@ final class IssueRecyclerViewAdapter extends RecyclerView.Adapter<IssueRecyclerV
                 .into(imageView);
     }
 
-
     public void setOnItemSelectListener(@NonNull OnIssueItemSelectListener itemSelectListener) {
         this.itemSelectListener = itemSelectListener;
     }

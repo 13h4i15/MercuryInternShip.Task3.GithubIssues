@@ -15,7 +15,6 @@ import retrofit2.http.Query;
 public interface GithubApi {
     String USERNAME = "alibaba";
     String PROJECT_NAME = "atlas";
-    int ISSUES_ON_PAGE = 30;
 
     @GET("/repos/{user}/{project}/issues")
     Single<List<Issue>> getProjectIssues(@Path("user") @NonNull String userName,
@@ -28,7 +27,7 @@ public interface GithubApi {
         STATE_CLOSED("closed"),
         STATE_ALL("all");
 
-        private String state;
+        private final String state;
 
         IssueState(@NonNull String state) {
             this.state = state;
