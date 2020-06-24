@@ -32,8 +32,8 @@ public final class IssuesViewModel extends AndroidViewModel {
             = BehaviorSubject.createDefault(Optional.empty());
     private final BehaviorSubject<GithubApi.IssueState> selectedIssuesStateSubject
             = BehaviorSubject.createDefault(GithubApi.IssueState.STATE_ALL);
-    private final BehaviorSubject<Optional<List<Issue>>> issuesSubject
-            = BehaviorSubject.createDefault(Optional.empty());
+    private final BehaviorSubject<List<Issue>> issuesSubject
+            = BehaviorSubject.create();
     private final BehaviorSubject<Boolean> refreshingSubject
             = BehaviorSubject.createDefault(true);
 
@@ -54,6 +54,7 @@ public final class IssuesViewModel extends AndroidViewModel {
                 .subscribe(this::obtainIssuesFromDB, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });
+        reloadIssues();
     }
 
     @Override
@@ -68,7 +69,7 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     @NonNull
-    public Observable<Optional<List<Issue>>> getIssuesObservable() {
+    public Observable<List<Issue>> getIssuesObservable() {
         return issuesSubject;
     }
 
@@ -100,7 +101,7 @@ public final class IssuesViewModel extends AndroidViewModel {
         webDisposable = api.getProjectIssues(
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .subscribe(issues -> {
                     if (page == 1) {
                         database.clearAllTables();
@@ -111,8 +112,7 @@ public final class IssuesViewModel extends AndroidViewModel {
                     }
                 }, error -> {
                     refreshingSubject.onNext(false);
-                    Toast.makeText(getApplication().getApplicationContext(),
-                            error.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }
 
@@ -131,11 +131,11 @@ public final class IssuesViewModel extends AndroidViewModel {
                 .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
                 .map(PojoConverter::issueWithUserToIssue)
                 .subscribe(issues -> {
-                    issuesSubject.onNext(Optional.of(issues));
+                    issuesSubject.onNext(issues);
                     refreshingSubject.onNext(false);
                 }, error -> {
                     refreshingSubject.onNext(false);
-                    issuesSubject.onNext(Optional.of(new ArrayList<>()));
+                    issuesSubject.onNext(new ArrayList<>());
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
     }

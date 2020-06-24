@@ -27,7 +27,6 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
 
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -90,11 +89,10 @@ public class IssueListFragment extends Fragment {
         issuesDisposable = viewModel.getIssuesObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .filter(Optional::isPresent)
                 .subscribe(issues -> {
-                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues.get());
+                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues);
                     DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
-                    adapter.setIssues(issues.get());
+                    adapter.setIssues(issues);
                     diffResult.dispatchUpdatesTo(adapter);
                     workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
                     startWork();
