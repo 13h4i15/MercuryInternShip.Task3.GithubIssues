@@ -40,6 +40,8 @@ public class IssueListFragment extends Fragment {
     private Disposable issuesDisposable, selectedIssueDisposable, refreshingDisposable;
     private RecyclerView recyclerView;
     private Parcelable recyclerState;
+    private PeriodicWorkRequest workRequest;
+    private WorkManager workManager;
 
     public static IssueListFragment newInstance() {
         return new IssueListFragment();
@@ -55,8 +57,16 @@ public class IssueListFragment extends Fragment {
     public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(root, savedInstanceState);
 
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+        workRequest = new PeriodicWorkRequest.Builder(
+                IssueWorker.class, 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)
+                .setConstraints(constraints)
+                .build();
+        workManager = WorkManager.getInstance(requireContext().getApplicationContext());
+
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
-        WorkManager workManager = WorkManager.getInstance(requireContext().getApplicationContext());
 
         recyclerView = root.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -136,14 +146,7 @@ public class IssueListFragment extends Fragment {
     }
 
     private void startWork() {
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
-        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
-                IssueWorker.class, 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)
-                .setConstraints(constraints)
-                .build();
-        WorkManager.getInstance(requireContext().getApplicationContext()).enqueueUniquePeriodicWork(
+        workManager.enqueueUniquePeriodicWork(
                 IssueWorker.ISSUE_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest);
     }
 }
