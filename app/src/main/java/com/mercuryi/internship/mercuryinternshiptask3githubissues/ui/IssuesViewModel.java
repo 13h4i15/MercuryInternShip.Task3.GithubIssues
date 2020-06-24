@@ -101,13 +101,14 @@ public final class IssuesViewModel extends AndroidViewModel {
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .filter(issues -> !issues.isEmpty())
                 .subscribe(issues -> {
                     if (page == 1) {
                         database.clearAllTables();
                     }
-                    dao.insertIssues(issues);
-                    loadIssues(page + 1);
+                    if (!issues.isEmpty()) {
+                        dao.insertIssues(issues);
+                        loadIssues(page + 1);
+                    }
                 }, error -> {
                     refreshingSubject.onNext(false);
                     Toast.makeText(getApplication().getApplicationContext(),
