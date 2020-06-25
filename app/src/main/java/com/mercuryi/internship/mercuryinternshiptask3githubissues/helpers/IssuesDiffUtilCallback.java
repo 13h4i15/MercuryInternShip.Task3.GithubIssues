@@ -28,13 +28,11 @@ public class IssuesDiffUtilCallback extends DiffUtil.Callback {
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
         Issue oldIssue = oldList.get(oldItemPosition);
         Issue newIssue = newList.get(newItemPosition);
-        return oldIssue == newIssue;
+        return oldIssue.equals(newIssue);
     }
 
     @Override
     public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-        Issue oldIssue = oldList.get(oldItemPosition);
-        Issue newIssue = newList.get(newItemPosition);
-        return oldIssue.equals(newIssue);
+        return areItemsTheSame(oldItemPosition, newItemPosition);
     }
 }

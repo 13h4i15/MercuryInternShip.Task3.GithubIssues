@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -35,22 +36,36 @@ public final class IssuesViewModel extends AndroidViewModel {
             = BehaviorSubject.createDefault(true);
 
     private final GithubApi api = AppNetworkService.getGithubApi();
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private Disposable webDisposable;
     private final AppDatabase database;
     private final IssueDao dao;
-    private final Disposable selectStateDisposable;
-    private Disposable webDisposable;
     private io.reactivex.disposables.Disposable databaseDisposable;
 
     public IssuesViewModel(@NonNull Application application) {
         super(application);
         database = AppDatabase.getInstance(application.getApplicationContext());
         dao = database.issueDao();
-        selectStateDisposable = selectedIssuesStateSubject
+        compositeDisposable.add(selectedIssuesStateSubject
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
-                .subscribe(this::obtainIssuesFromDB, error -> {
+                .distinctUntilChanged()
+                .subscribe(state -> {
+                    setSelectedIssue(null);
+                    obtainIssuesFromDB(state);
+                }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
-                });
+                }));
+        compositeDisposable.add(refreshingSubject
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .filter(isRefreshing -> isRefreshing)
+                .distinctUntilChanged()
+                .subscribe(isRefreshing -> {
+                    setSelectedIssue(null);
+                }, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
+                }));
         reloadIssues();
     }
 
@@ -61,8 +76,7 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     public void setSelectedIssue(@Nullable Issue issue) {
-        if (!selectedIssueSubject.getValue().isPresent() || !selectedIssueSubject.getValue().get().equals(issue))
-            selectedIssueSubject.onNext(Optional.ofNullable(issue));
+        selectedIssueSubject.onNext(Optional.ofNullable(issue));
     }
 
     @NonNull
@@ -81,9 +95,7 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     public void setState(@NonNull GithubApi.IssueState state) {
-        if (!state.equals(selectedIssuesStateSubject.getValue())) {
-            selectedIssuesStateSubject.onNext(state);
-        }
+        selectedIssuesStateSubject.onNext(state);
     }
 
     public void reloadIssues() {
@@ -94,8 +106,7 @@ public final class IssuesViewModel extends AndroidViewModel {
         if (page == 1) {
             refreshingSubject.onNext(true);
         }
-        dispose(webDisposable);
-        webDisposable = api.getProjectIssues(
+        webDisposable = api.getProjectIssuesAsynchronous(
                 GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
@@ -111,6 +122,7 @@ public final class IssuesViewModel extends AndroidViewModel {
                     refreshingSubject.onNext(false);
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
                 });
+
     }
 
     private void obtainIssuesFromDB(@NonNull GithubApi.IssueState state) {
@@ -138,18 +150,24 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     private void dispose() {
-        dispose(databaseDisposable);
         dispose(webDisposable);
-        dispose(selectStateDisposable);
+        dispose(databaseDisposable);
+        dispose(compositeDisposable);
     }
 
-    private void dispose(Disposable disposable) {
+    private void dispose(CompositeDisposable compositeDisposable) {
+        if (compositeDisposable != null && !compositeDisposable.isDisposed()) {
+            compositeDisposable.dispose();
+        }
+    }
+
+    private void dispose(io.reactivex.disposables.Disposable disposable) {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
     }
 
-    private void dispose(io.reactivex.disposables.Disposable disposable) {
+    private void dispose(Disposable disposable) {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }

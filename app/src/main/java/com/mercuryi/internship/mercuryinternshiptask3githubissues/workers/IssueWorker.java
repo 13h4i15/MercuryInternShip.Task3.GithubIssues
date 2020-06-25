@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -13,61 +14,62 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import retrofit2.Call;
+import retrofit2.Response;
 
 public class IssueWorker extends Worker {
     public final static String ISSUE_WORK_NAME = "issue_work";
     private final static String LOADING_ERROR_LOG_TAG = "loading_error";
 
-    private final GithubApi api = AppNetworkService.getGithubApi();
-    private final List<Issue> issues = new ArrayList<>();
-    private final IssueDao dao;
-    private final AppDatabase database;
-    private Disposable disposable;
-
     public IssueWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
-        database = AppDatabase.getInstance(context.getApplicationContext());
-        dao = database.issueDao();
     }
 
     @NonNull
     @Override
     public Result doWork() {
-        issues.clear();
-        loadIssues(1);
+        saveIssues(loadIssues());
         return Result.success();
     }
 
-    @Override
-    public void onStopped() {
-        dispose();
-        super.onStopped();
-    }
-
-    private void loadIssues(int page) {
-        dispose();
-        disposable = api.getProjectIssues(
-                GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page)
-                .subscribe(issues -> {
-                    if (!issues.isEmpty()) {
-                        this.issues.addAll(issues);
-                        loadIssues(page + 1);
+    private List<Issue> loadIssues() {
+        GithubApi api = AppNetworkService.getGithubApi();
+        List<Issue> issues = new ArrayList<>();
+        for (int page = 1; ; page++) {
+            Call<List<Issue>> call = api.getProjectIssues(
+                    GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page);
+            try {
+                Response<List<Issue>> response = call.execute();
+                List<Issue> newIssues = response.body();
+                if (response.isSuccessful()) {
+                    if (newIssues != null && !newIssues.isEmpty()) {
+                        issues.addAll(newIssues);
                     } else {
-                        database.clearAllTables();
-                        dao.insertIssues(this.issues);
+                        break;
                     }
-                }, error -> {
-                    Log.e(LOADING_ERROR_LOG_TAG, error.toString());
-                });
+                } else {
+                    issues = null;
+                    break;
+                }
+            } catch (IOException exception) {
+                Log.e(LOADING_ERROR_LOG_TAG, exception.toString());
+                issues = null;
+                break;
+            }
+        }
+        return issues;
     }
 
-    private void dispose() {
-        if (disposable != null && !disposable.isDisposed()) {
-            disposable.dispose();
+    private void saveIssues(@Nullable List<Issue> issues) {
+        AppDatabase database = AppDatabase.getInstance(getApplicationContext());
+        IssueDao dao = database.issueDao();
+        database.clearAllTables();
+        if (issues != null) {
+            dao.insertIssues(issues);
         }
     }
 }

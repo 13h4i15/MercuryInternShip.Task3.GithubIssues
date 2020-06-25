@@ -21,7 +21,6 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
 
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -29,7 +28,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
-    private Disposable issuesDisposable, selectedIssueDisposable;
+    private Disposable disposable;
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
 
@@ -57,23 +56,17 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
 
-        issuesDisposable = viewModel.getIssuesObservable()
+        disposable = viewModel.getSelectedIssueObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(issues -> {
-                    getSupportFragmentManager().popBackStack();
-                }, error -> {
-                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
-                });
-
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .distinctUntilChanged()
                 .subscribe(issue -> {
-                    setToolbarNavigationVisibility(true);
-                    createIssueFragment(issue);
+                    if (issue.isPresent()) {
+                        setToolbarNavigationVisibility(true);
+                        createIssueFragment(issue.get());
+                    } else {
+                        getSupportFragmentManager().popBackStack();
+                    }
                 }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 });
@@ -81,11 +74,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
-            issuesDisposable.dispose();
-        }
-        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
-            selectedIssueDisposable.dispose();
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
         }
         super.onDestroy();
     }
@@ -105,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        viewModel.setSelectedIssue(null);
         switch (item.getItemId()) {
             case R.id.action_all_issues:
                 viewModel.setState(GithubApi.IssueState.STATE_ALL);

@@ -10,11 +10,6 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.work.Constraints;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.NetworkType;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
 
 import android.os.Parcelable;
 import android.util.Log;
@@ -27,13 +22,13 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class IssueListFragment extends Fragment {
     private final static String RECYCLER_STATE_EXTRA = "recycler_state";
 
-    private Disposable issuesDisposable, selectedIssueDisposable, refreshingDisposable;
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private RecyclerView recyclerView;
     private Parcelable recyclerState;
 
@@ -66,13 +61,14 @@ public class IssueListFragment extends Fragment {
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
         swipeRefreshLayout.setOnRefreshListener(viewModel::reloadIssues);
 
-        refreshingDisposable = viewModel.getRefreshingObservable()
+        compositeDisposable.add(viewModel.getRefreshingObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(swipeRefreshLayout::setRefreshing);
+                .distinctUntilChanged()
+                .subscribe(swipeRefreshLayout::setRefreshing));
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
-        issuesDisposable = viewModel.getIssuesObservable()
+        compositeDisposable.add(viewModel.getIssuesObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(issues -> {
@@ -93,23 +89,24 @@ public class IssueListFragment extends Fragment {
                     }
                 }, error -> {
                     Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
-                });
+                }));
 
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable()
+        compositeDisposable.add(viewModel.getSelectedIssueObservable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .distinctUntilChanged()
                 .subscribe(selectedIssue -> {
                     adapter.setSelectedIssue(selectedIssue.orElse(null));
                 }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
-                });
+                }));
     }
 
     @Override
     public void onDestroyView() {
-        dispose(issuesDisposable);
-        dispose(selectedIssueDisposable);
-        dispose(refreshingDisposable);
+        if (compositeDisposable != null && !compositeDisposable.isDisposed()) {
+            compositeDisposable.dispose();
+        }
         super.onDestroyView();
     }
 
@@ -119,11 +116,5 @@ public class IssueListFragment extends Fragment {
             outState.putParcelable(RECYCLER_STATE_EXTRA, recyclerView.getLayoutManager().onSaveInstanceState());
         }
         super.onSaveInstanceState(outState);
-    }
-
-    private void dispose(Disposable disposable) {
-        if (disposable != null && !disposable.isDisposed()) {
-            disposable.dispose();
-        }
     }
 }
