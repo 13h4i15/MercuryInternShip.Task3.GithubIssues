@@ -6,18 +6,18 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {IssuePojo.class, UserPojo.class}, version = 1)
+@Database(entities = {IssueEntity.class, UserEntity.class}, version = 1)
 public abstract class AppDatabase extends RoomDatabase {
     private final static String DB_NAME = "issues";
 
-    private static AppDatabase instance;
+    private static AppDatabase INSTANCE;
 
-    public abstract IssueDAO issueDAO();
+    public abstract IssueDao issueDao();
 
     public static synchronized AppDatabase getInstance(Context appContext) {
-        if (instance == null) {
-            instance = Room.databaseBuilder(appContext, AppDatabase.class, DB_NAME).build();
+        if (INSTANCE == null) {
+            INSTANCE = Room.databaseBuilder(appContext, AppDatabase.class, DB_NAME).build();
         }
-        return instance;
+        return INSTANCE;
     }
 }

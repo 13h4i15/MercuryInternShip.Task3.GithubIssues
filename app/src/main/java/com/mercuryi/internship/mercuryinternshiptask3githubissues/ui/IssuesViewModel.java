@@ -8,9 +8,9 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.AppDatabase;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueDAO;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueDao;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueWithUser;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.PojoConverter;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.EntityConverter;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import io.reactivex.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -37,7 +36,7 @@ public final class IssuesViewModel extends AndroidViewModel {
 
     private final GithubApi api = AppNetworkService.getGithubApi();
     private final AppDatabase database;
-    private final IssueDAO dao;
+    private final IssueDao dao;
     private final Disposable selectStateDisposable;
     private Disposable webDisposable;
     private io.reactivex.disposables.Disposable databaseDisposable;
@@ -45,7 +44,7 @@ public final class IssuesViewModel extends AndroidViewModel {
     public IssuesViewModel(@NonNull Application application) {
         super(application);
         database = AppDatabase.getInstance(application.getApplicationContext());
-        dao = database.issueDAO();
+        dao = database.issueDao();
         selectStateDisposable = selectedIssuesStateSubject
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
@@ -116,18 +115,18 @@ public final class IssuesViewModel extends AndroidViewModel {
 
     private void obtainIssuesFromDB(@NonNull GithubApi.IssueState state) {
         dispose(databaseDisposable);
-        Flowable<List<IssueWithUser>> flowable;
+        io.reactivex.Observable<List<IssueWithUser>> observable;
         if (state.equals(GithubApi.IssueState.STATE_OPEN)) {
-            flowable = dao.getOpenIssues();
+            observable = dao.getOpenIssues();
         } else if (state.equals(GithubApi.IssueState.STATE_CLOSED)) {
-            flowable = dao.getClosedIssues();
+            observable = dao.getClosedIssues();
         } else {
-            flowable = dao.getAllIssues();
+            observable = dao.getAllIssues();
         }
-        databaseDisposable = flowable
+        databaseDisposable = observable
                 .subscribeOn(io.reactivex.schedulers.Schedulers.io())
                 .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
-                .map(PojoConverter::issueWithUserToIssue)
+                .map(EntityConverter::issueWithUserToIssue)
                 .subscribe(issues -> {
                     issuesSubject.onNext(issues);
                     refreshingSubject.onNext(false);

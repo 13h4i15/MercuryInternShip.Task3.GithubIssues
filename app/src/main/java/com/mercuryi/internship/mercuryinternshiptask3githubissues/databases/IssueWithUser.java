@@ -6,33 +6,33 @@ import androidx.room.Relation;
 
 public class IssueWithUser {
     @Embedded
-    private IssuePojo issue;
+    private IssueEntity issue;
 
     @Relation(
             parentColumn = "user_login",
             entityColumn = "login",
-            entity = UserPojo.class
+            entity = UserEntity.class
     )
-    private UserPojo user;
+    private UserEntity user;
 
     public IssueWithUser() {
     }
 
-    public void setUser(@NonNull UserPojo user) {
+    public void setUser(@NonNull UserEntity user) {
         this.user = user;
     }
 
-    public void setIssue(@NonNull IssuePojo issue) {
+    public void setIssue(@NonNull IssueEntity issue) {
         this.issue = issue;
     }
 
     @NonNull
-    public IssuePojo getIssue() {
+    public IssueEntity getIssue() {
         return issue;
     }
 
     @NonNull
-    public UserPojo getUser() {
+    public UserEntity getUser() {
         return user;
     }
 }

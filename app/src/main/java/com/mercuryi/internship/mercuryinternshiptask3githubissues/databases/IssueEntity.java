@@ -6,13 +6,12 @@ import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.PrimaryKey;
 
-
 @Entity(tableName = "issue", foreignKeys = {@ForeignKey(
-        entity = UserPojo.class,
+        entity = UserEntity.class,
         parentColumns = "login",
         childColumns = "user_login"
 )})
-public class IssuePojo {
+public class IssueEntity {
     @PrimaryKey
     @ColumnInfo(name = "id")
     @NonNull
@@ -38,8 +37,8 @@ public class IssuePojo {
     @NonNull
     private final String userLogin;
 
-    public IssuePojo(@NonNull String id, @NonNull Integer number, @NonNull String state,
-                     @NonNull String title, @NonNull String body, @NonNull String userLogin) {
+    public IssueEntity(@NonNull String id, @NonNull Integer number, @NonNull String state,
+                       @NonNull String title, @NonNull String body, @NonNull String userLogin) {
         this.id = id;
         this.number = number;
         this.state = state;

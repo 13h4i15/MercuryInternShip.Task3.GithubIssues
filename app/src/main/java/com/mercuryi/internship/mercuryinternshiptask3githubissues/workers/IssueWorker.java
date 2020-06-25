@@ -8,7 +8,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.AppDatabase;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueDAO;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.databases.IssueDao;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
@@ -24,14 +24,14 @@ public class IssueWorker extends Worker {
 
     private final GithubApi api = AppNetworkService.getGithubApi();
     private final List<Issue> issues = new ArrayList<>();
-    private final IssueDAO dao;
+    private final IssueDao dao;
     private final AppDatabase database;
     private Disposable disposable;
 
     public IssueWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         database = AppDatabase.getInstance(context.getApplicationContext());
-        dao = database.issueDAO();
+        dao = database.issueDao();
     }
 
     @NonNull

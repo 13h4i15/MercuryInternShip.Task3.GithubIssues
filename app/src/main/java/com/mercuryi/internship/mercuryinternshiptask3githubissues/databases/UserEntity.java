@@ -6,7 +6,7 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "user")
-public class UserPojo {
+public class UserEntity {
     @PrimaryKey
     @ColumnInfo(name = "login")
     @NonNull
@@ -16,7 +16,7 @@ public class UserPojo {
     @NonNull
     private final String avatarUrl;
 
-    public UserPojo(@NonNull String login, @NonNull String avatarUrl) {
+    public UserEntity(@NonNull String login, @NonNull String avatarUrl) {
         this.login = login;
         this.avatarUrl = avatarUrl;
     }

@@ -5,6 +5,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -14,8 +19,10 @@ import android.view.MenuItem;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -30,6 +37,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                IssueWorker.class, 15, TimeUnit.SECONDS, 15, TimeUnit.SECONDS)
+                .setConstraints(constraints)
+                .build();
+        WorkManager workManager = WorkManager.getInstance(getApplicationContext());
+        workManager.enqueueUniquePeriodicWork(
+                IssueWorker.ISSUE_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest);
 
         if (savedInstanceState == null) createListFragment();
 

@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public final class AppNetworkService {
     private final static String BASE_URL = "https://api.github.com";
 
-    private static AppNetworkService instance;
+    private static AppNetworkService INSTANCE;
     private final GithubApi githubApi;
 
     private AppNetworkService() {
@@ -25,9 +25,9 @@ public final class AppNetworkService {
     }
 
     private static AppNetworkService getInstance() {
-        if (instance == null) {
-            instance = new AppNetworkService();
+        if (INSTANCE == null) {
+            INSTANCE = new AppNetworkService();
         }
-        return instance;
+        return INSTANCE;
     }
 }

@@ -25,9 +25,6 @@ import android.widget.TextView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
-
-import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -39,8 +36,6 @@ public class IssueListFragment extends Fragment {
     private Disposable issuesDisposable, selectedIssueDisposable, refreshingDisposable;
     private RecyclerView recyclerView;
     private Parcelable recyclerState;
-    private PeriodicWorkRequest workRequest;
-    private WorkManager workManager;
 
     public static IssueListFragment newInstance() {
         return new IssueListFragment();
@@ -55,15 +50,6 @@ public class IssueListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View root, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(root, savedInstanceState);
-
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
-        workRequest = new PeriodicWorkRequest.Builder(
-                IssueWorker.class, 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)
-                .setConstraints(constraints)
-                .build();
-        workManager = WorkManager.getInstance(requireContext().getApplicationContext());
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
 
@@ -94,8 +80,6 @@ public class IssueListFragment extends Fragment {
                     DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
                     adapter.setIssues(issues);
                     diffResult.dispatchUpdatesTo(adapter);
-                    workManager.cancelUniqueWork(IssueWorker.ISSUE_WORK_NAME);
-                    startWork();
                     if (adapter.getItemCount() != 0) {
                         if (recyclerState != null && recyclerView.getLayoutManager() != null) {
                             recyclerView.getLayoutManager().onRestoreInstanceState(recyclerState);
@@ -141,10 +125,5 @@ public class IssueListFragment extends Fragment {
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
-    }
-
-    private void startWork() {
-        workManager.enqueueUniquePeriodicWork(
-                IssueWorker.ISSUE_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest);
     }
 }

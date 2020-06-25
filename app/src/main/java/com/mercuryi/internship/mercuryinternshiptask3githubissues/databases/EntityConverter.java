@@ -1,7 +1,6 @@
 package com.mercuryi.internship.mercuryinternshiptask3githubissues.databases;
 
 import androidx.annotation.NonNull;
-import androidx.room.TypeConverter;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.User;
@@ -9,36 +8,31 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.User;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PojoConverter {
-    @TypeConverter
+public class EntityConverter {
     @NonNull
-    public static IssuePojo issueToPojo(@NonNull Issue issue) {
-        return new IssuePojo(issue.getId(), issue.getNumber(), issue.getState(), issue.getTitle(),
+    public static IssueEntity issueToEntity(@NonNull Issue issue) {
+        return new IssueEntity(issue.getId(), issue.getNumber(), issue.getState(), issue.getTitle(),
                 issue.getBody(), issue.getUser().getLogin());
     }
 
-    @TypeConverter
     @NonNull
-    public static UserPojo userToPojo(@NonNull User user) {
-        return new UserPojo(user.getLogin(), user.getAvatarUrl());
+    public static UserEntity userToEntity(@NonNull User user) {
+        return new UserEntity(user.getLogin(), user.getAvatarUrl());
     }
 
-    @TypeConverter
     @NonNull
-    public static User pojoToUser(@NonNull UserPojo user) {
+    public static User entityToUser(@NonNull UserEntity user) {
         return new User(user.getLogin(), user.getAvatarUrl());
     }
 
-    @TypeConverter
     @NonNull
     public static Issue issueWithUserToIssue(@NonNull IssueWithUser issueWithUser) {
-        User user = pojoToUser(issueWithUser.getUser());
-        IssuePojo issuePojo = issueWithUser.getIssue();
-        return new Issue(issuePojo.getId(), issuePojo.getNumber(), issuePojo.getState(),
-                issuePojo.getTitle(), issuePojo.getBody(), user);
+        User user = entityToUser(issueWithUser.getUser());
+        IssueEntity issueEntity = issueWithUser.getIssue();
+        return new Issue(issueEntity.getId(), issueEntity.getNumber(), issueEntity.getState(),
+                issueEntity.getTitle(), issueEntity.getBody(), user);
     }
 
-    @TypeConverter
     @NonNull
     public static List<Issue> issueWithUserToIssue(@NonNull List<IssueWithUser> issuesWithUser) {
         List<Issue> issues = new ArrayList<>();
