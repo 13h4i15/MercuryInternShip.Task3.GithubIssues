@@ -14,12 +14,9 @@ import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.AppNetworkService;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Response;
+import java.util.Optional;
 
 public class IssueWorker extends Worker {
     public final static String ISSUE_WORK_NAME = "issue_work";
@@ -36,29 +33,24 @@ public class IssueWorker extends Worker {
         return Result.success();
     }
 
+    @Nullable
     private List<Issue> loadIssues() {
         GithubApi api = AppNetworkService.getGithubApi();
         List<Issue> issues = new ArrayList<>();
-        for (int page = 1; ; page++) {
-            Call<List<Issue>> call = api.getProjectIssues(
-                    GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page);
-            try {
-                Response<List<Issue>> response = call.execute();
-                List<Issue> newIssues = response.body();
-                if (response.isSuccessful()) {
-                    if (newIssues != null && !newIssues.isEmpty()) {
-                        issues.addAll(newIssues);
-                    } else {
-                        break;
-                    }
-                } else {
-                    issues = null;
-                    break;
-                }
-            } catch (IOException exception) {
-                Log.e(LOADING_ERROR_LOG_TAG, exception.toString());
-                issues = null;
+        int page = 1;
+        while (true) {
+            Optional<List<Issue>> issuesPage = api.getProjectIssues(
+                    GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page++)
+                    .map(Optional::of)
+                    .doOnError(error -> Log.e(LOADING_ERROR_LOG_TAG, error.toString()))
+                    .onErrorReturnItem(Optional.empty())
+                    .blockingGet();
+            if (!issuesPage.isPresent()) {
+                return null;
+            } else if (issuesPage.get().isEmpty()) {
                 break;
+            } else {
+                issues.addAll(issuesPage.get());
             }
         }
         return issues;
@@ -67,8 +59,8 @@ public class IssueWorker extends Worker {
     private void saveIssues(@Nullable List<Issue> issues) {
         AppDatabase database = AppDatabase.getInstance(getApplicationContext());
         IssueDao dao = database.issueDao();
-        database.clearAllTables();
         if (issues != null) {
+            database.clearAllTables();
             dao.insertIssues(issues);
         }
     }

@@ -5,11 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.work.Constraints;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.NetworkType;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -19,16 +14,11 @@ import android.view.MenuItem;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
-import com.mercuryi.internship.mercuryinternshiptask3githubissues.workers.IssueWorker;
 
-import java.util.concurrent.TimeUnit;
-
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.disposables.CompositeDisposable;
 
 public class MainActivity extends AppCompatActivity {
-    private Disposable disposable;
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
 
@@ -36,17 +26,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
-        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
-                IssueWorker.class, 15, TimeUnit.SECONDS, 15, TimeUnit.SECONDS)
-                .setConstraints(constraints)
-                .build();
-        WorkManager workManager = WorkManager.getInstance(getApplicationContext());
-        workManager.enqueueUniquePeriodicWork(
-                IssueWorker.ISSUE_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest);
 
         if (savedInstanceState == null) createListFragment();
 
@@ -56,9 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
 
-        disposable = viewModel.getSelectedIssueObservable()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        compositeDisposable.add(viewModel.getSelectedIssueObservable()
                 .distinctUntilChanged()
                 .subscribe(issue -> {
                     if (issue.isPresent()) {
@@ -69,14 +46,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
-                });
+                }));
     }
 
     @Override
     protected void onDestroy() {
-        if (disposable != null && !disposable.isDisposed()) {
-            disposable.dispose();
-        }
+        compositeDisposable.dispose();
         super.onDestroy();
     }
 
