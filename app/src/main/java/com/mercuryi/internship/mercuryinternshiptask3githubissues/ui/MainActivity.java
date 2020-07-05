@@ -57,9 +57,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        viewModel.setSelectedIssue(null);
-        setToolbarNavigationVisibility(false);
-        super.onBackPressed();
+        if (viewModel.getSelectedIssue().isPresent()) {
+            if (doesIssueFragmentContainerExist()) {
+                finish();
+            }
+            viewModel.setSelectedIssue(null);
+            setToolbarNavigationVisibility(false);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
@@ -104,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setToolbarNavigationVisibility(boolean isVisible) {
-        if (toolbar != null) {
+        if (!doesIssueFragmentContainerExist() && toolbar != null) {
             if (isVisible) {
                 toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
             } else {

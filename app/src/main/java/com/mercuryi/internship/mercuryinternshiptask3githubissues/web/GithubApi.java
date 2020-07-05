@@ -16,7 +16,7 @@ public interface GithubApi {
     String USERNAME = "alibaba";
     String PROJECT_NAME = "atlas";
 
-    @GET("/repos/{user}/{project}/issues")
+    @GET("/repos/{user}/{project}/issues?per_page=100   ")
     Single<List<Issue>> getProjectIssues(@Path("user") @NonNull String userName,
                                          @Path("project") @NonNull String projectName,
                                          @Query("state") @NonNull String state,

@@ -38,8 +38,9 @@ public class IssueWorker extends Worker {
         GithubApi api = AppNetworkService.getGithubApi();
         List<Issue> issues = new ArrayList<>();
         int page = 1;
-        while (true) {
-            Optional<List<Issue>> issuesPage = api.getProjectIssues(
+        Optional<List<Issue>> issuesPage;
+        do {
+            issuesPage = api.getProjectIssues(
                     GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page++)
                     .map(Optional::of)
                     .doOnError(error -> Log.e(LOADING_ERROR_LOG_TAG, error.toString()))
@@ -47,12 +48,10 @@ public class IssueWorker extends Worker {
                     .blockingGet();
             if (!issuesPage.isPresent()) {
                 return null;
-            } else if (issuesPage.get().isEmpty()) {
-                break;
             } else {
                 issues.addAll(issuesPage.get());
             }
-        }
+        } while (!issuesPage.get().isEmpty());
         return issues;
     }
 

@@ -80,6 +80,10 @@ public final class IssuesViewModel extends AndroidViewModel {
         selectedIssueSubject.onNext(Optional.ofNullable(issue));
     }
 
+    public Optional<Issue> getSelectedIssue(){
+        return selectedIssueSubject.getValue();
+    }
+
     @NonNull
     public Observable<List<Issue>> getIssuesObservable() {
         return issuesSubject;
@@ -107,19 +111,17 @@ public final class IssuesViewModel extends AndroidViewModel {
         refreshingSubject.onNext(true);
         compositeDisposable.add(Completable.fromAction(() -> {
             int page = 1;
-            while (true) {
-                List<Issue> issuesPage = api.getProjectIssues(
+            List<Issue> issuesPage;
+            do {
+                issuesPage = api.getProjectIssues(
                         GithubApi.USERNAME, GithubApi.PROJECT_NAME, GithubApi.IssueState.STATE_ALL.getState(), page++)
                         .blockingGet();
-                if (issuesPage.isEmpty()) {
-                    break;
-                } else {
-                    if (page == 1) {
-                        database.clearAllTables();
-                    }
-                    dao.insertIssues(issuesPage);
+                if (page == 1) {
+                    setSelectedIssue(null);
+                    database.clearAllTables();
                 }
-            }
+                dao.insertIssues(issuesPage);
+            } while (!issuesPage.isEmpty());
         }).subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(() -> {
