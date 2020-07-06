@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -17,13 +18,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.helpers.IssuesDiffUtilCallback;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 
 public class IssueListFragment extends Fragment {
-    private final static String LOADING_ERROR_LOG_TAG = "loading_error";
-
-    private Disposable issuesDisposable, selectedIssueDisposable;
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private RecyclerView recyclerView;
 
     public static IssueListFragment newInstance() {
         return new IssueListFragment();
@@ -41,57 +42,50 @@ public class IssueListFragment extends Fragment {
 
         IssuesViewModel viewModel = new ViewModelProvider(requireActivity()).get(IssuesViewModel.class);
 
-        RecyclerView recyclerView = root.findViewById(R.id.list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView = root.findViewById(R.id.list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         IssueRecyclerViewAdapter adapter = new IssueRecyclerViewAdapter();
         recyclerView.addItemDecoration(new VerticalSpaceItemDecoration());
         recyclerView.setAdapter(adapter);
         adapter.setOnItemSelectListener(viewModel::setSelectedIssue);
 
         SwipeRefreshLayout swipeRefreshLayout = root.findViewById(R.id.swipe_to_refresh);
-        SwipeRefreshLayout.OnRefreshListener refreshListener = viewModel::reloadIssues;
-        swipeRefreshLayout.setOnRefreshListener(refreshListener);
+        swipeRefreshLayout.setOnRefreshListener(viewModel::reloadIssues);
+
+        compositeDisposable.add(viewModel.getRefreshingObservable()
+                .distinctUntilChanged()
+                .subscribe(swipeRefreshLayout::setRefreshing));
 
         TextView emptyListMessageView = root.findViewById(R.id.empty_list_message);
-        issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
-            swipeRefreshLayout.setRefreshing(false);
-            if (!issues.isEmpty()) {
-                if (viewModel.getCurrentPage() == 1) {
-                    adapter.clearIssues();
-                }
-                recyclerView.setVisibility(View.VISIBLE);
-                emptyListMessageView.setVisibility(View.GONE);
-                adapter.addToIssues(issues);
-            } else if (adapter.getItemCount() == 0) {
-                recyclerView.setVisibility(View.GONE);
-                emptyListMessageView.setVisibility(View.VISIBLE);
-            }
-        }, error -> {
-            Log.e(LOADING_ERROR_LOG_TAG, error.toString());
-            swipeRefreshLayout.setRefreshing(false);
-        });
+        compositeDisposable.add(viewModel.getIssuesObservable()
+                .subscribe(issues -> {
+                    IssuesDiffUtilCallback diffUtilCallback = new IssuesDiffUtilCallback(adapter.getIssues(), issues);
+                    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffUtilCallback);
+                    adapter.setIssues(issues);
+                    diffResult.dispatchUpdatesTo(adapter);
+                    if (adapter.getItemCount() != 0) {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        emptyListMessageView.setVisibility(View.GONE);
+                    } else {
+                        recyclerView.setVisibility(View.GONE);
+                        emptyListMessageView.setVisibility(View.VISIBLE);
+                    }
+                }, error -> {
+                    Log.e(Constants.LOADING_ERROR_LOG_TAG, error.toString());
+                }));
 
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
-            adapter.setSelectedIssue(selectedIssue.orElse(null));
-        });
-
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                if (!recyclerView.canScrollVertically(1)) viewModel.loadNewIssues();
-            }
-        });
+        compositeDisposable.add(viewModel.getSelectedIssueObservable()
+                .distinctUntilChanged()
+                .subscribe(selectedIssue -> {
+                    adapter.setSelectedIssue(selectedIssue.orElse(null));
+                }, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
+                }));
     }
 
     @Override
     public void onDestroyView() {
-        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
-            issuesDisposable.dispose();
-        }
-        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
-            selectedIssueDisposable.dispose();
-        }
+        compositeDisposable.clear();
         super.onDestroyView();
     }
 }

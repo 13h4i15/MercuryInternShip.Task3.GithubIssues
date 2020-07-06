@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_all_issues"
+        android:title="@string/all_issues_state" />
+    <item
+        android:id="@+id/action_open_issues"
+        android:title="@string/open_issues_state" />
+    <item
+        android:id="@+id/action_closed_issues"
+        android:title="@string/closed_issues_state" />
+</menu>

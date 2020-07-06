@@ -2,4 +2,7 @@
     <string name="app_name">GithubIssues</string>
 
     <string name="empty_issue_list_fragment">No opened Issues</string>
+    <string name="all_issues_state">All</string>
+    <string name="open_issues_state">Open</string>
+    <string name="closed_issues_state">Close</string>
 </resources>

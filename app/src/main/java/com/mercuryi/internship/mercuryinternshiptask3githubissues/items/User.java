@@ -16,7 +16,7 @@ public final class User implements Parcelable {
     @SerializedName("avatar_url")
     private final String avatarUrl;
 
-    private User(@NonNull String login, @NonNull String avatarUrl) {
+    public User(@NonNull String login, @NonNull String avatarUrl) {
         this.login = login;
         this.avatarUrl = avatarUrl;
     }
@@ -60,12 +60,12 @@ public final class User implements Parcelable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return login.equals(user.login) &&
-                avatarUrl.equals(user.avatarUrl);
+        return getLogin().equals(user.getLogin()) &&
+                getAvatarUrl().equals(user.getAvatarUrl());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(login, avatarUrl);
+        return Objects.hash(getLogin(), getAvatarUrl());
     }
 }

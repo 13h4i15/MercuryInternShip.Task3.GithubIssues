@@ -7,14 +7,18 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.R;
 import com.mercuryi.internship.mercuryinternshiptask3githubissues.items.Issue;
+import com.mercuryi.internship.mercuryinternshiptask3githubissues.web.GithubApi;
 
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 
 public class MainActivity extends AppCompatActivity {
-    private Disposable issuesDisposable, selectedIssueDisposable;
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private Toolbar toolbar;
     private IssuesViewModel viewModel;
 
@@ -31,38 +35,60 @@ public class MainActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(IssuesViewModel.class);
 
-        issuesDisposable = viewModel.getIssuesObservable().subscribe(issues -> {
-            if (!issues.isEmpty() && viewModel.getCurrentPage() == 1) {
-                getSupportFragmentManager().popBackStack();
-            }
-        });
-
-        selectedIssueDisposable = viewModel.getSelectedIssueObservable().subscribe(selectedIssue -> {
-            selectedIssue.ifPresent(issue -> {
-                setToolbarNavigationVisibility(true);
-                createIssueFragment(issue);
-            });
-        });
+        compositeDisposable.add(viewModel.getSelectedIssueObservable()
+                .distinctUntilChanged()
+                .subscribe(issue -> {
+                    if (issue.isPresent()) {
+                        setToolbarNavigationVisibility(true);
+                        createIssueFragment(issue.get());
+                    } else {
+                        getSupportFragmentManager().popBackStack();
+                    }
+                }, error -> {
+                    Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
+                }));
     }
 
     @Override
     protected void onDestroy() {
-        if (issuesDisposable != null && !issuesDisposable.isDisposed()) {
-            issuesDisposable.dispose();
-        }
-        if (selectedIssueDisposable != null && !selectedIssueDisposable.isDisposed()) {
-            selectedIssueDisposable.dispose();
-        }
+        compositeDisposable.dispose();
         super.onDestroy();
     }
 
     @Override
     public void onBackPressed() {
-        viewModel.setSelectedIssue(null);
-        setToolbarNavigationVisibility(false);
-        super.onBackPressed();
+        if (viewModel.getSelectedIssue().isPresent()) {
+            if (doesIssueFragmentContainerExist()) {
+                finish();
+            }
+            viewModel.setSelectedIssue(null);
+            setToolbarNavigationVisibility(false);
+        } else {
+            super.onBackPressed();
+        }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.toolbar_state_selection, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_all_issues:
+                viewModel.setState(GithubApi.IssueState.STATE_ALL);
+                break;
+            case R.id.action_open_issues:
+                viewModel.setState(GithubApi.IssueState.STATE_OPEN);
+                break;
+            case R.id.action_closed_issues:
+                viewModel.setState(GithubApi.IssueState.STATE_CLOSED);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     private void createListFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -84,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setToolbarNavigationVisibility(boolean isVisible) {
-        if (toolbar != null) {
+        if (!doesIssueFragmentContainerExist() && toolbar != null) {
             if (isVisible) {
                 toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
             } else {
