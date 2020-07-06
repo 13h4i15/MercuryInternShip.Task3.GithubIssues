@@ -35,7 +35,7 @@ public final class IssuesViewModel extends AndroidViewModel {
     private final BehaviorSubject<List<Issue>> issuesSubject
             = BehaviorSubject.create();
     private final BehaviorSubject<Boolean> refreshingSubject
-            = BehaviorSubject.createDefault(true);
+            = BehaviorSubject.createDefault(false);
     private final GithubApi api = AppNetworkService.getGithubApi();
     private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private final AppDatabase database;
@@ -67,7 +67,7 @@ public final class IssuesViewModel extends AndroidViewModel {
                 }, error -> {
                     Log.e(Constants.ISSUE_SELECTION_ERROR_LOG_TAG, error.toString());
                 }));
-        reloadIssues();
+        loadIssues();
     }
 
     @Override
@@ -80,7 +80,7 @@ public final class IssuesViewModel extends AndroidViewModel {
         selectedIssueSubject.onNext(Optional.ofNullable(issue));
     }
 
-    public Optional<Issue> getSelectedIssue(){
+    public Optional<Issue> getSelectedIssue() {
         return selectedIssueSubject.getValue();
     }
 
@@ -104,11 +104,11 @@ public final class IssuesViewModel extends AndroidViewModel {
     }
 
     public void reloadIssues() {
+        refreshingSubject.onNext(true);
         loadIssues();
     }
 
     private void loadIssues() {
-        refreshingSubject.onNext(true);
         compositeDisposable.add(Completable.fromAction(() -> {
             int page = 1;
             List<Issue> issuesPage;
